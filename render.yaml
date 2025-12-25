@@ -1,0 +1,41 @@
+# Render.com deployment configuration
+# https://render.com/docs/yaml-spec
+
+services:
+  - type: web
+    name: alloy-orchestrator
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    
+    # Use free tier (or upgrade for persistent storage)
+    plan: free
+    
+    # Health check
+    healthCheckPath: /health
+    
+    # Environment variables
+    envVars:
+      - key: DATABASE_MODE
+        value: local
+      - key: BASE_URL
+        fromService:
+          name: alloy-orchestrator
+          type: web
+          property: url
+      
+      # Optional: Use Supabase for persistent storage
+      # - key: DATABASE_MODE
+      #   value: supabase
+      # - key: SUPABASE_URL
+      #   sync: false  # Set in Render dashboard
+      # - key: SUPABASE_ANON_KEY
+      #   sync: false
+      # - key: SUPABASE_SERVICE_KEY
+      #   sync: false
+    
+    # Persistent disk for SQLite (requires paid plan)
+    # disk:
+    #   name: alloy-data
+    #   mountPath: /app/data
+    #   sizeGB: 1

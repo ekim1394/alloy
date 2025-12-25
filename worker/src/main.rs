@@ -1,0 +1,146 @@
+//! Jules Mac Runner Worker Agent
+//! 
+//! Runs on Mac Minis to execute build jobs in Tart VMs.
+
+mod config;
+mod executor;
+mod orchestrator_client;
+mod vm_pool;
+
+use std::sync::Arc;
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::time::Duration;
+use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
+
+use crate::config::Config;
+use crate::executor::JobExecutor;
+use crate::orchestrator_client::OrchestratorClient;
+use crate::vm_pool::VmPool;
+
+#[tokio::main]
+async fn main() -> anyhow::Result<()> {
+    // Load environment variables
+    dotenvy::dotenv().ok();
+
+    // Initialize tracing
+    tracing_subscriber::registry()
+        .with(tracing_subscriber::EnvFilter::try_from_default_env()
+            .unwrap_or_else(|_| "worker=debug".into()))
+        .with(tracing_subscriber::fmt::layer())
+        .init();
+
+    let config = Config::from_env()?;
+    
+    tracing::info!("Starting Alloy Worker");
+    tracing::info!("Orchestrator URL: {}", config.orchestrator_url);
+    tracing::info!("VM Pool Size: {}", config.vm_pool_size);
+
+    // Initialize VM pool
+    if let Some(ref script) = config.vm_setup_script {
+        tracing::info!("VM Setup Script: {}", script);
+    }
+    let vm_pool = Arc::new(VmPool::new(
+        config.vm_pool_size, 
+        &config.tart_base_image,
+        config.vm_setup_script.as_deref(),
+    ).await?);
+    let pool_for_shutdown = Arc::clone(&vm_pool);
+
+
+    // Shutdown flag for graceful shutdown
+    let shutdown_requested = Arc::new(AtomicBool::new(false));
+    let shutdown_flag = shutdown_requested.clone();
+
+    // Set up signal handlers
+    tokio::spawn(async move {
+        let ctrl_c = async {
+            tokio::signal::ctrl_c()
+                .await
+                .expect("Failed to install Ctrl+C handler");
+        };
+
+        #[cfg(unix)]
+        let terminate = async {
+            tokio::signal::unix::signal(tokio::signal::unix::SignalKind::terminate())
+                .expect("Failed to install SIGTERM handler")
+                .recv()
+                .await;
+        };
+
+        #[cfg(not(unix))]
+        let terminate = std::future::pending::<()>();
+
+        tokio::select! {
+            _ = ctrl_c => {
+                tracing::info!("Received Ctrl+C, initiating graceful shutdown...");
+            }
+            _ = terminate => {
+                tracing::info!("Received SIGTERM, initiating graceful shutdown...");
+            }
+        }
+
+        shutdown_flag.store(true, Ordering::SeqCst);
+    });
+
+    let client = OrchestratorClient::new(&config.orchestrator_url);
+    
+    // Register with orchestrator
+    let registration = client.register(&config.hostname, config.capacity).await?;
+    tracing::info!("Registered as worker {}", registration.worker_id);
+    
+    let executor = JobExecutor::new(
+        registration.worker_id,
+        client.clone(),
+        config.clone(),
+        Arc::clone(&vm_pool),
+    );
+
+    // Main worker loop
+    while !shutdown_requested.load(Ordering::SeqCst) {
+        // Send heartbeat
+        if let Err(e) = client.heartbeat(registration.worker_id, 0, config.capacity).await {
+            tracing::warn!("Failed to send heartbeat: {}", e);
+        }
+        
+        // Try to claim a job
+        match client.claim_job(registration.worker_id).await {
+            Ok(Some(job)) => {
+                tracing::info!(job_id = %job.id, "Claimed job, executing...");
+                
+                // Execute the job
+                match executor.execute(&job).await {
+                    Ok(result) => {
+                        tracing::info!(
+                            job_id = %job.id, 
+                            exit_code = result.exit_code,
+                            "Job completed"
+                        );
+                        
+                        // Report completion
+                        if let Err(e) = client.complete_job(registration.worker_id, result).await {
+                            tracing::error!("Failed to report job completion: {}", e);
+                        }
+                    }
+                    Err(e) => {
+                        tracing::error!(job_id = %job.id, "Job execution failed: {}", e);
+                        // TODO: Report failure
+                    }
+                }
+            }
+            Ok(None) => {
+                // No jobs available, wait before polling again
+                tokio::time::sleep(Duration::from_secs(5)).await;
+            }
+            Err(e) => {
+                tracing::warn!("Failed to claim job: {}", e);
+                tokio::time::sleep(Duration::from_secs(10)).await;
+            }
+        }
+    }
+
+    // Graceful shutdown - clean up VM pool
+    pool_for_shutdown.shutdown().await;
+
+    tracing::info!("Graceful shutdown complete");
+    Ok(())
+}

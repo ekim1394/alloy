@@ -1,0 +1,39 @@
+//! Configuration management for the orchestrator
+
+use anyhow::{Context, Result};
+
+#[derive(Debug, Clone)]
+pub struct Config {
+    /// Supabase project URL
+    pub supabase_url: String,
+    
+    /// Supabase anon/service key
+    pub supabase_key: String,
+    
+    /// Stripe secret key for billing
+    pub stripe_secret_key: Option<String>,
+    
+    /// Server port
+    pub port: u16,
+    
+    /// Base URL for the API (used in responses)
+    pub base_url: String,
+}
+
+impl Config {
+    pub fn from_env() -> Result<Self> {
+        Ok(Self {
+            supabase_url: std::env::var("SUPABASE_URL")
+                .context("SUPABASE_URL environment variable required")?,
+            supabase_key: std::env::var("SUPABASE_KEY")
+                .context("SUPABASE_KEY environment variable required")?,
+            stripe_secret_key: std::env::var("STRIPE_SECRET_KEY").ok(),
+            port: std::env::var("PORT")
+                .unwrap_or_else(|_| "3000".to_string())
+                .parse()
+                .context("Invalid PORT value")?,
+            base_url: std::env::var("BASE_URL")
+                .unwrap_or_else(|_| "http://localhost:3000".to_string()),
+        })
+    }
+}
