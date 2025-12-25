@@ -5,6 +5,7 @@ import Login from './pages/Login'
 import Signup from './pages/Signup'
 import Settings from './pages/Settings'
 import JobDetail from './pages/JobDetail'
+import Landing from './pages/Landing'
 
 function NavBar() {
   const { user, signOut } = useAuth()
@@ -42,6 +43,31 @@ function NavBar() {
 }
 
 function AppContent() {
+  const { user, loading } = useAuth()
+
+  // Show loading state while checking auth
+  if (loading) {
+    return (
+      <div className="app" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div className="card">Loading...</div>
+      </div>
+    )
+  }
+
+  // Show landing page for unauthenticated users
+  if (!user) {
+    return (
+      <div className="app">
+        <Routes>
+          <Route path="/login" element={<><NavBar /><main className="main-content"><Login /></main></>} />
+          <Route path="/signup" element={<><NavBar /><main className="main-content"><Signup /></main></>} />
+          <Route path="*" element={<Landing />} />
+        </Routes>
+      </div>
+    )
+  }
+
+  // Authenticated view
   return (
     <div className="app">
       <NavBar />
@@ -49,8 +75,8 @@ function AppContent() {
       <main className="main-content">
         <Routes>
           <Route path="/" element={<Dashboard />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/signup" element={<Signup />} />
+          <Route path="/login" element={<Dashboard />} />
+          <Route path="/signup" element={<Dashboard />} />
           <Route path="/settings" element={<Settings />} />
           <Route path="/jobs/:jobId" element={<JobDetail />} />
         </Routes>
