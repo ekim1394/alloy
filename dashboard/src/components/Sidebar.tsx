@@ -1,5 +1,7 @@
 import { Link, useLocation } from 'react-router-dom'
+import { LayoutDashboard, Settings, FileText, LogOut, HardDrive } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
+import Logo from '../assets/logo.png'
 
 interface SidebarProps {
   onSignOut: () => void
@@ -14,10 +16,10 @@ function Sidebar({ onSignOut }: SidebarProps) {
   return (
     <aside className="drawer-side h-full z-20">
       <label htmlFor="my-drawer-2" aria-label="close sidebar" className="drawer-overlay"></label> 
-      <div className="menu p-4 w-80 min-h-full bg-base-200 text-base-content flex flex-col">
-        <div className="mb-8 px-4">
+      <div className="menu p-4 w-64 min-h-full bg-base-200 text-base-content flex flex-col border-r border-base-300">
+        <div className="mb-8 px-2">
           <Link to="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
-            <span className="text-2xl">⚡</span>
+            <img src={Logo} alt="Alloy Logo" className="w-8 h-8 object-contain" />
             <div>
               <div className="font-bold text-xl tracking-tight">Alloy</div>
               <div className="text-[10px] font-bold tracking-widest opacity-50">CI/CD RUNNER</div>
@@ -31,7 +33,7 @@ function Sidebar({ onSignOut }: SidebarProps) {
               to="/" 
               className={isActive('/') ? 'active' : ''}
             >
-              <span className="text-lg mr-1">📊</span>
+              <LayoutDashboard size={20} />
               Dashboard
             </Link>
           </li>
@@ -40,32 +42,35 @@ function Sidebar({ onSignOut }: SidebarProps) {
               to="/settings" 
               className={isActive('/settings') ? 'active' : ''}
             >
-              <span className="text-lg mr-1">⚙️</span>
+              <Settings size={20} />
               Settings
             </Link>
           </li>
         </ul>
 
         <div className="mt-auto pt-8">
-          <div className="bg-base-300 rounded-lg p-4 mb-4">
-            <div className="flex justify-between text-sm mb-2 font-medium">
-              <span>Storage</span>
+          <div className="bg-base-300/50 rounded-lg p-3 mb-4 border border-base-300">
+            <div className="flex justify-between text-xs mb-2 font-medium items-center">
+              <span className="flex items-center gap-1.5 opacity-70">
+                <HardDrive size={14} />
+                Storage
+              </span>
               <span className="opacity-70">78%</span>
             </div>
-            <progress className="progress progress-primary w-full" value="78" max="100"></progress>
+            <progress className="progress progress-primary w-full h-1.5" value="78" max="100"></progress>
           </div>
 
           <ul className="menu p-0 gap-2">
             <li>
               <a href="https://github.com/ekim1394/alloy/tree/main/docs" target="_blank" rel="noopener noreferrer">
-                <span className="text-lg mr-1">📄</span>
+                <FileText size={20} />
                 Documentation
               </a>
             </li>
             {user && (
                <li>
                 <button onClick={onSignOut} className="text-error hover:bg-error/10">
-                  <span className="text-lg mr-1">🚪</span>
+                  <LogOut size={20} />
                   Sign out
                 </button>
               </li>
