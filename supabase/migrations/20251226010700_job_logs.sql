@@ -9,7 +9,7 @@ on "storage"."objects"
 as permissive
 for insert
 to public
-using ((bucket_id = 'logs'::text));
+with check ((bucket_id = 'logs'::text));
 
 -- Policy: Allow authenticated read access to logs bucket
 create policy "Allow authenticated read access to logs"

@@ -1,3 +1,5 @@
+create schema if not exists stripe;
+
 -- Customers table
 create foreign table stripe.customers (
   id text,
