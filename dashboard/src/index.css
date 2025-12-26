@@ -1663,3 +1663,246 @@ input:focus, textarea:focus {
     flex: 1;
   }
 }
+
+/* Visual Demo Section */
+.demo-section {
+  padding: 6rem 2rem;
+  background: var(--bg-dark);
+  text-align: center;
+  border-bottom: 1px solid var(--border);
+}
+
+.demo-container {
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.demo-placeholder {
+  aspect-ratio: 16/9;
+  background: #0d1117;
+  border: 1px solid #30363d;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 2rem;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+  position: relative;
+  overflow: hidden;
+}
+
+.demo-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  color: var(--text-secondary);
+}
+
+.demo-icon {
+  font-size: 3rem;
+  opacity: 0.5;
+}
+
+.demo-caption {
+  font-size: 1.2rem;
+  color: var(--text-secondary);
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.demo-caption strong {
+  color: var(--text-primary);
+  color: #3fb950;
+}
+
+/* API Section */
+.api-section {
+  padding: 8rem 0;
+  background: linear-gradient(180deg, #161b22 0%, #0d1117 100%);
+  border-bottom: 1px solid var(--border);
+}
+
+.api-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 2rem;
+  display: flex;
+  align-items: center;
+  gap: 6rem;
+}
+
+.api-content {
+  flex: 1;
+}
+
+.api-badge {
+  display: inline-block;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: #a371f7;
+  background: rgba(163, 113, 247, 0.1);
+  padding: 0.25rem 0.75rem;
+  border-radius: 100px;
+  margin-bottom: 1.5rem;
+  border: 1px solid rgba(163, 113, 247, 0.2);
+}
+
+.api-content h2 {
+  font-size: 2.5rem;
+  font-weight: 700;
+  margin-bottom: 1.5rem;
+  background: linear-gradient(135deg, #fff 0%, #a371f7 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.api-content p {
+  font-size: 1.1rem;
+  color: var(--text-secondary);
+  line-height: 1.7;
+  margin-bottom: 2.5rem;
+}
+
+.api-features {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.api-feature {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-weight: 500;
+  color: #e6edf3;
+}
+
+.feature-dot {
+  width: 6px;
+  height: 6px;
+  background: #a371f7;
+  border-radius: 50%;
+  box-shadow: 0 0 8px #a371f7;
+}
+
+.api-code-block {
+  flex: 1;
+  background: #0d1117;
+  border: 1px solid #30363d;
+  border-radius: 12px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+  overflow: hidden;
+  min-width: 450px;
+}
+
+.code-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 1rem;
+  background: #161b22;
+  border-bottom: 1px solid #30363d;
+  height: 48px;
+}
+
+.window-controls {
+  display: flex;
+  gap: 6px;
+}
+
+.window-controls span {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #30363d;
+}
+
+.code-tabs {
+  display: flex;
+  height: 100%;
+}
+
+.code-tab {
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  padding: 0 1.25rem;
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  height: 100%;
+  border-bottom: 2px solid transparent;
+  transition: all 0.2s;
+}
+
+.code-tab:hover {
+  color: var(--text-primary);
+}
+
+.code-tab.active {
+  color: #a371f7;
+  border-bottom-color: #a371f7;
+}
+
+.code-content {
+  padding: 1.5rem;
+  font-family: 'JetBrains Mono', 'Monaco', monospace;
+  font-size: 0.9rem;
+  line-height: 1.6;
+  overflow-x: auto;
+}
+
+.code-content pre {
+  margin: 0;
+}
+
+.keyword { color: #ff7b72; }
+.string { color: #a5d6ff; }
+.comment { color: #8b949e; font-style: italic; }
+.punctuation { color: #79c0ff; }
+.variable { color: #d2a8ff; }
+
+/* Responsive Adjustments */
+@media (max-width: 1000px) {
+  .hero-container,
+  .orchestration-container,
+  .api-container,
+  .visibility-container {
+    flex-direction: column;
+    text-align: center;
+    padding: 0 1.5rem;
+    gap: 3rem;
+  }
+
+  .hero-left,
+  .hero-right,
+  .orchestration-visual,
+  .orchestration-content,
+  .api-content,
+  .api-code-block {
+    width: 100%;
+    max-width: none;
+    min-width: 0;
+  }
+
+  .hero-headline {
+    font-size: 2.5rem;
+  }
+
+  .hero-buttons,
+  .hero-trust,
+  .api-features {
+    justify-content: center;
+  }
+
+  .comparison-table-wrapper {
+    overflow-x: auto;
+  }
+
+  .comparison-table {
+    min-width: 600px;
+  }
+}
