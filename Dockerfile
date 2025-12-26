@@ -1,5 +1,5 @@
 # Build stage
-FROM rust:1.75-slim as builder
+FROM rust:1.91-slim AS builder
 
 WORKDIR /app
 
@@ -12,6 +12,8 @@ RUN apt-get update && apt-get install -y \
 # Copy source code
 COPY Cargo.toml Cargo.lock ./
 COPY orchestrator ./orchestrator
+COPY worker ./worker
+COPY cli ./cli
 COPY shared ./shared
 
 # Build the orchestrator
