@@ -193,9 +193,10 @@ curl -X POST https://api.alloy-ci.dev/v1/jobs \
             <span className="footer-copyright">© 2024 Alloy CI. Open Source.</span>
           </div>
           <div className="footer-right">
-            <a href="https://github.com/ekim1394/alloy/tree/main/docs" target="_blank" rel="noopener noreferrer">Documentation</a>
+            <a href="https://github.com/ekim1394/alloy/tree/main/docs" target="_blank" rel="noopener noreferrer">Docs</a>
             <a href="https://github.com/ekim1394/alloy" target="_blank" rel="noopener noreferrer">GitHub</a>
-            <a href="#">License</a>
+            <Link to="/terms">Terms</Link>
+            <Link to="/privacy">Privacy</Link>
           </div>
         </div>
       </footer>
