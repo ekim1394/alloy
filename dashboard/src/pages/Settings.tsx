@@ -398,27 +398,6 @@ function Settings() {
               )}
             </div>
 
-            <div>
-              <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
-                <Terminal size={20} className="text-primary" />
-                CLI Configuration
-              </h3>
-              <p className="text-base-content/70 mb-4 text-sm">
-                Add this to your CLI config file to authenticate your runner:
-              </p>
-              <div className="mockup-code text-sm bg-base-900 border border-base-content/10">
-                <pre data-prefix="$">
-                  <code>cat ~/.alloy/config.toml</code>
-                </pre>
-                <pre className="text-success">
-                  <code>
-                    {`      
-        orchestrator_url = "${window.location.origin}"
-        api_key = "your-api-key-here"`}
-                  </code>
-                </pre>
-              </div>
-            </div>
           </div>
         ) : (
           <div className="p-8">
