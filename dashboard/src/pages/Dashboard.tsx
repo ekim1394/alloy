@@ -29,11 +29,7 @@ function Dashboard() {
   })
 
   // Calculate stats
-  const activeBuilds = jobs.filter(j => j.status === 'running').length
-  const completedJobs = jobs.filter(j => j.status === 'completed' || j.status === 'failed')
-  const successRate = completedJobs.length > 0 
-    ? Math.round((completedJobs.filter(j => j.status === 'completed').length / completedJobs.length) * 100 * 10) / 10
-    : 100
+
 
   // Filter jobs
   const filteredJobs = jobs.filter(job => {

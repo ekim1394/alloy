@@ -32,11 +32,7 @@ export interface JobWithLogs {
   logs?: LogEntry[]
 }
 
-interface CreateJobResponse {
-  job_id: string
-  status: JobStatus
-  stream_url: string
-}
+
 
 export interface RetryJobResponse {
   new_job_id: string
@@ -57,10 +53,7 @@ export interface CreateApiKeyResponse {
   name: string
 }
 
-interface ApiError {
-  message: string
-  error_type: string
-}
+
 
 // Billing types
 export type SubscriptionPlan = 'pro' | 'team'

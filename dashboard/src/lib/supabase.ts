@@ -27,17 +27,17 @@ export async function signIn(email: string, password: string) {
   return { data, error }
 }
 
-async function signOut() {
+export async function signOut() {
   const { error } = await supabase.auth.signOut()
   return { error }
 }
 
-async function getSession() {
+export async function getSession() {
   const { data: { session } } = await supabase.auth.getSession()
   return session
 }
 
-async function getUser() {
+export async function getUser() {
   const { data: { user } } = await supabase.auth.getUser()
   return user
 }
@@ -53,7 +53,7 @@ export async function signInWithGitHub() {
   return { data, error }
 }
 
-async function signInWithGoogle() {
+export async function signInWithGoogle() {
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: 'google',
     options: {

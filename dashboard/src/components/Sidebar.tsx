@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router-dom'
-import { LayoutDashboard, Settings, FileText, LogOut, HardDrive } from 'lucide-react'
+import { LayoutDashboard, Settings, FileText, LogOut } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
 import Logo from '../assets/logo.png'
 
