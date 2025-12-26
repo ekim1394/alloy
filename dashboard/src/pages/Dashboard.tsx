@@ -69,36 +69,30 @@ function Dashboard() {
 
   return (
     <div className="flex flex-col gap-8">
-      {/* Header */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-        <div>
-          <p className="text-base-content/60 mt-1 font-medium">
-            Monitor Apple Silicon build clusters and agent status.
-          </p>
-        </div>
-      </div>
-
       {/* Search & Filters */}
-      <div className="flex flex-col md:flex-row gap-4 items-center max-w-full">
-        <div className="relative flex-1 w-full">
-          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-base-content/40">
-            <Search size={18} />
-          </div>
+      <div className="flex flex-col md:flex-row gap-4 items-center overflow-x-hidden">
+        <div className="relative flex-1 max-w-md">
           <input
             type="text"
-            placeholder="Search by Job ID, Commit, or Workflow..."
+            placeholder="Search by Job ID or commit..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="input input-bordered w-full pl-10 focus:outline-none"
+            className="input input-bordered focus:outline-none pl-10 w-full"
           />
+          <span className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-base-content/40">
+            <Search size={18} />
+          </span>
         </div>
-        <div className="flex gap-2 w-full md:w-auto">
+        <div className="flex gap-2 w-full md:w-auto shrink-0">
+          <span className="flex items-center text-sm font-medium whitespace-nowrap text-base-content/70">
+            Status:
+          </span>
           <select
             className="select select-bordered flex-1 md:flex-none"
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
           >
-            <option value="all">Status: All</option>
+            <option value="all">All</option>
             <option value="running">Running</option>
             <option value="completed">Passed</option>
             <option value="failed">Failed</option>

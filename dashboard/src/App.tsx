@@ -34,16 +34,6 @@ function NavBar() {
   const navigate = useNavigate();
   const hostMode = getHostMode();
 
-  const handleSignOut = async () => {
-    await signOut();
-    if (hostMode === 'app') {
-      // Redirect to main landing site after signout
-      window.location.href = 'https://alloy-ci.dev';
-    } else {
-      navigate('/login');
-    }
-  };
-
   return (
     <div className="navbar bg-base-100 border-b border-base-200">
       <div className="navbar-start">
@@ -53,7 +43,6 @@ function NavBar() {
       </div>
       <div className="navbar-end gap-2">
         {hostMode === 'landing' ? (
-          // On landing site, show link to app
           <>
             <a href="https://app.alloy-ci.dev" className="btn btn-ghost">
               Dashboard
@@ -63,29 +52,7 @@ function NavBar() {
             </a>
           </>
         ) : (
-          // On app or local, show normal nav
-          <>
-            <Link to="/" className="btn btn-ghost">
-              Jobs
-            </Link>
-            {user ? (
-              <>
-                <Link to="/settings" className="btn btn-ghost">
-                  Settings
-                </Link>
-                <Link to="/settings?tab=billing" className="btn btn-ghost">
-                  Billing
-                </Link>
-                <button className="btn btn-ghost" onClick={handleSignOut}>
-                  Sign out
-                </button>
-              </>
-            ) : (
-              <Link to="/login" className="btn btn-primary">
-                Sign in
-              </Link>
-            )}
-          </>
+          <></>
         )}
       </div>
     </div>

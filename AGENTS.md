@@ -66,7 +66,6 @@ docs/               # Documentation
 - **Security Hardening**:
   - Argon2 id password hashing
   - SHA-256 API key hashing
-  - Rate limiting (100 req/min per IP)
   - Configurable CORS for production
 
 **Billing Architecture:**

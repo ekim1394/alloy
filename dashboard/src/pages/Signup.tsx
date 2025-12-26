@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { signUp } from '../lib/supabase';
+import { signUp, signInWithGitHub } from '../lib/supabase';
+import GithubIcon from '../components/GithubIcon';
 
 function Signup() {
   const [email, setEmail] = useState('');
@@ -10,6 +11,16 @@ function Signup() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
   const navigate = useNavigate();
+
+  const handleGitHubSignup = async () => {
+    setLoading(true);
+    const { error } = await signInWithGitHub();
+    if (error) {
+      setError(error.message);
+      setLoading(false);
+    }
+    // Redirect handled by Supabase
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -112,6 +123,17 @@ function Signup() {
               {loading ? <span className="loading loading-spinner"></span> : 'Create account'}
             </button>
           </form>
+
+          <div className="divider text-base-content/40 text-sm">or</div>
+
+          <button
+            className="btn btn-outline w-full gap-2"
+            onClick={handleGitHubSignup}
+            disabled={loading}
+          >
+            <GithubIcon />
+            Sign up with GitHub
+          </button>
 
           <div className="mt-6 text-center text-sm text-base-content/60">
             Already have an account?{' '}

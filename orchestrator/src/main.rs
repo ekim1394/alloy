@@ -7,7 +7,6 @@ mod auth;
 mod config;
 mod crypto;
 pub mod db;
-mod rate_limit;
 mod routes;
 mod services;
 mod state;
@@ -107,7 +106,6 @@ async fn main() -> anyhow::Result<()> {
         .layer(DefaultBodyLimit::max(2 * 1024 * 1024 * 1024)) // 2GB limit
         .layer(TraceLayer::new_for_http())
         .layer(build_cors_layer())
-        .layer(rate_limit::create_rate_limiter()) // Rate limiting: 100 req/min per client
         .with_state(state);
 
     tracing::info!("Rate limiting enabled: 100 requests/minute per client");

@@ -2,6 +2,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { LayoutDashboard, Settings, FileText, LogOut } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import Logo from '../assets/logo.png';
+import GithubIcon from './GithubIcon';
 
 interface SidebarProps {
   onSignOut: () => void;
@@ -50,8 +51,8 @@ function Sidebar({ onSignOut }: SidebarProps) {
                 target="_blank"
                 rel="noopener noreferrer"
               >
-                <FileText size={20} />
-                Documentation
+                <GithubIcon />
+                Github
               </a>
             </li>
             {user && (

@@ -397,7 +397,6 @@ function Settings() {
                 </div>
               )}
             </div>
-
           </div>
         ) : (
           <div className="p-8">

@@ -17,49 +17,6 @@ async function handleResponse<T>(response: Response): Promise<T> {
 
 // ===== Jobs API =====
 
-export async function fetchJobs(status?: string, limit?: number): Promise<Job[]> {
-  const params = new URLSearchParams();
-  if (status) params.set('status', status);
-  if (limit) params.set('limit', limit.toString());
-
-  const url = params.toString() ? `${API_BASE}/jobs?${params}` : `${API_BASE}/jobs`;
-
-  const response = await fetch(url);
-  return handleResponse<Job[]>(response);
-}
-
-export async function fetchJob(jobId: string): Promise<JobWithLogs> {
-  const response = await fetch(`${API_BASE}/jobs/${jobId}`);
-  const job = await handleResponse<Job>(response);
-  // Job detail endpoint returns job directly, logs come from websocket
-  return { job };
-}
-
-export async function fetchJobLogs(jobId: string): Promise<string[]> {
-  const response = await fetch(`${API_BASE}/jobs/${jobId}/logs/stored`);
-  const logs = await handleResponse<Array<{ content: string }>>(response);
-  return logs.map((l) => l.content);
-}
-
-export async function cancelJob(jobId: string): Promise<void> {
-  const response = await fetch(`${API_BASE}/jobs/${jobId}/cancel`, {
-    method: 'POST',
-  });
-  if (!response.ok) {
-    const error = await response.json().catch(() => ({ message: 'Failed to cancel job' }));
-    throw new Error(error.message);
-  }
-}
-
-export async function retryJob(jobId: string): Promise<RetryJobResponse> {
-  const response = await fetch(`${API_BASE}/jobs/${jobId}/retry`, {
-    method: 'POST',
-  });
-  return handleResponse<RetryJobResponse>(response);
-}
-
-// ===== API Keys =====
-
 import { supabase } from './supabase';
 
 // Helper to get auth headers from current session
@@ -75,6 +32,56 @@ async function getAuthHeaders(): Promise<Record<string, string>> {
   }
   return { 'Content-Type': 'application/json' };
 }
+
+export async function fetchJobs(status?: string, limit?: number): Promise<Job[]> {
+  const params = new URLSearchParams();
+  if (status) params.set('status', status);
+  if (limit) params.set('limit', limit.toString());
+
+  const url = params.toString() ? `${API_BASE}/jobs?${params}` : `${API_BASE}/jobs`;
+  const headers = await getAuthHeaders();
+
+  const response = await fetch(url, { headers });
+  return handleResponse<Job[]>(response);
+}
+
+export async function fetchJob(jobId: string): Promise<JobWithLogs> {
+  const headers = await getAuthHeaders();
+  const response = await fetch(`${API_BASE}/jobs/${jobId}`, { headers });
+  const job = await handleResponse<Job>(response);
+  // Job detail endpoint returns job directly, logs come from websocket
+  return { job };
+}
+
+export async function fetchJobLogs(jobId: string): Promise<string[]> {
+  const headers = await getAuthHeaders();
+  const response = await fetch(`${API_BASE}/jobs/${jobId}/logs/stored`, { headers });
+  const logs = await handleResponse<Array<{ content: string }>>(response);
+  return logs.map((l) => l.content);
+}
+
+export async function cancelJob(jobId: string): Promise<void> {
+  const headers = await getAuthHeaders();
+  const response = await fetch(`${API_BASE}/jobs/${jobId}/cancel`, {
+    method: 'POST',
+    headers,
+  });
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({ message: 'Failed to cancel job' }));
+    throw new Error(error.message);
+  }
+}
+
+export async function retryJob(jobId: string): Promise<RetryJobResponse> {
+  const headers = await getAuthHeaders();
+  const response = await fetch(`${API_BASE}/jobs/${jobId}/retry`, {
+    method: 'POST',
+    headers,
+  });
+  return handleResponse<RetryJobResponse>(response);
+}
+
+// ===== API Keys =====
 
 export async function fetchApiKeys(): Promise<ApiKey[]> {
   const headers = await getAuthHeaders();
