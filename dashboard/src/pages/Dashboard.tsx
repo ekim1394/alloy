@@ -66,16 +66,17 @@ function Dashboard() {
   }
 
   return (
-    <div className="dashboard-container">
-      <div className="dashboard-main">
+    <div className="container mx-auto">
+      <div className="flex flex-col gap-8">
         {/* Header */}
-        <div className="dashboard-header">
-          <div className="dashboard-header-left">
-            <h1 className="dashboard-title">Overview</h1>
-            <p className="dashboard-subtitle">Monitor Apple Silicon build clusters and agent status.</p>
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+          <div>
+            <h1 className="text-3xl font-bold">Overview</h1>
+            <p className="text-base-content/70 mt-1">Monitor Apple Silicon build clusters and agent status.</p>
           </div>
-          <div className="dashboard-header-actions">
-            <button className="btn btn-secondary" onClick={() => refetch()}>
+          <div className="flex gap-2">
+            <button className="btn btn-outline" onClick={() => refetch()}>
+              <span className="loading loading-spinner loading-xs hidden"></span>
               ↻ Refresh
             </button>
             <button className="btn btn-primary">
@@ -85,66 +86,61 @@ function Dashboard() {
         </div>
 
         {/* Stats Cards */}
-        <div className="stats-grid">
-          <div className="stat-card">
-            <div className="stat-header">
-              <span className="stat-label">Active Builds</span>
-              <span className="stat-icon">🔧</span>
+        <div className="stats shadow w-full bg-base-100">
+          <div className="stat">
+            <div className="stat-figure text-primary">
+              <div className="text-3xl">🔧</div>
             </div>
-            <div className="stat-value">
-              {activeBuilds}
-              <span className="stat-trend positive">↑1</span>
-            </div>
+            <div className="stat-title">Active Builds</div>
+            <div className="stat-value text-primary">{activeBuilds}</div>
+            <div className="stat-desc text-success">↑1</div>
           </div>
 
-          <div className="stat-card">
-            <div className="stat-header">
-              <span className="stat-label">Avg Queue Time</span>
-              <span className="stat-icon">⏱️</span>
+          <div className="stat">
+            <div className="stat-figure text-secondary">
+               <div className="text-3xl">⏱️</div>
             </div>
-            <div className="stat-value">
-              45s
-              <span className="stat-trend negative">↓12s</span>
-            </div>
+            <div className="stat-title">Avg Queue Time</div>
+            <div className="stat-value">45s</div>
+            <div className="stat-desc text-success">↓12s</div>
           </div>
 
-          <div className="stat-card">
-            <div className="stat-header">
-              <span className="stat-label">Success Rate</span>
-              <span className="stat-icon">✓</span>
+          <div className="stat">
+            <div className="stat-figure text-secondary">
+               <div className="text-3xl">✓</div>
             </div>
-            <div className="stat-value">
-              {successRate}%
-              <span className="stat-trend positive">↑2.1%</span>
-            </div>
+            <div className="stat-title">Success Rate</div>
+            <div className="stat-value">{successRate}%</div>
+            <div className="stat-desc text-success">↑2.1%</div>
           </div>
 
-          <div className="stat-card">
-            <div className="stat-header">
-              <span className="stat-label">Agents Online</span>
-              <span className="stat-icon">🖥️</span>
+          <div className="stat">
+            <div className="stat-figure text-secondary">
+               <div className="text-3xl">🖥️</div>
             </div>
-            <div className="stat-value">
-              8<span className="stat-total">/8</span>
-            </div>
+            <div className="stat-title">Agents Online</div>
+            <div className="stat-value">8<span className="text-lg opacity-50">/8</span></div>
+            <div className="stat-desc">All systems operational</div>
           </div>
         </div>
 
         {/* Search & Filters */}
-        <div className="filter-bar">
-          <div className="search-input-wrapper">
-            <span className="search-icon">🔍</span>
+        <div className="flex flex-col md:flex-row gap-4">
+          <div className="join flex-1">
+             <div className="join-item flex items-center bg-base-100 border border-base-300 px-3">
+                <span>🔍</span>
+             </div>
             <input
               type="text"
               placeholder="Search by Job ID, Commit, or Workflow..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="search-input"
+              className="input input-bordered join-item w-full focus:outline-none"
             />
           </div>
-          <div className="filter-dropdowns">
+          <div className="flex gap-2">
             <select 
-              className="filter-select"
+              className="select select-bordered"
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
             >
@@ -154,77 +150,89 @@ function Dashboard() {
               <option value="failed">Failed</option>
               <option value="pending">Queued</option>
             </select>
-            <select className="filter-select">
+            <select className="select select-bordered">
               <option>Agent: Any</option>
             </select>
           </div>
         </div>
 
         {/* Jobs Table */}
-        {isLoading ? (
-          <div className="card">Loading jobs...</div>
-        ) : filteredJobs.length === 0 ? (
-          <div className="empty-state">
-            <p>No jobs yet. Run your first job with:</p>
-            <pre>alloy run -c "xcodebuild test -scheme MyApp"</pre>
-          </div>
-        ) : (
-          <div className="jobs-table-wrapper">
-            <table className="jobs-table">
-              <thead>
-                <tr>
-                  <th>STATUS</th>
-                  <th>JOB ID / WORKFLOW</th>
-                  <th>AGENT</th>
-                  <th>DURATION</th>
-                  <th>ACTIONS</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredJobs.map((job) => (
-                  <tr 
-                    key={job.id} 
-                    className={selectedJob?.id === job.id ? 'selected' : ''}
-                    onClick={() => setSelectedJob(job)}
-                  >
-                    <td>
-                      <span className={`status-indicator status-${job.status}`}>
-                        <span className="status-dot">{getStatusIcon(job.status)}</span>
-                        {getStatusLabel(job.status)}
-                      </span>
-                    </td>
-                    <td>
-                      <div className="job-info">
-                        <span className="job-id">#{job.id.slice(0, 8)}</span>
-                        <span className="job-name">{(job.command || job.script || 'Build').split(' ')[0]}</span>
-                        <div className="job-meta">
-                          <span className="job-commit">{job.id.slice(-7)}</span>
-                          <span className="job-desc">{(job.command || job.script || '').substring(0, 30)}</span>
-                        </div>
-                      </div>
-                    </td>
-                    <td>
-                      <span className="agent-chip">
-                        <span className="agent-icon">🖥️</span>
-                        {job.worker_id ? `M1-${job.worker_id.slice(0, 4)}` : '—'}
-                      </span>
-                    </td>
-                    <td className="duration-cell">{formatDuration(job)}</td>
-                    <td>
-                      <Link 
-                        to={`/jobs/${job.id}`}
-                        className="action-btn"
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        →
-                      </Link>
-                    </td>
+        <div className="card bg-base-100 shadow-sm border border-base-200 overflow-hidden">
+          {isLoading ? (
+             <div className="flex justify-center p-8">
+               <span className="loading loading-spinner loading-lg"></span>
+             </div>
+          ) : filteredJobs.length === 0 ? (
+            <div className="p-12 text-center text-base-content/60">
+              <p className="mb-4 text-lg">No jobs yet.</p>
+              <div className="mockup-code inline-block text-left">
+                <pre data-prefix="$"><code>alloy run -c "xcodebuild test -scheme MyApp"</code></pre>
+              </div>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="table table-zebra w-full">
+                <thead>
+                  <tr>
+                    <th>STATUS</th>
+                    <th>JOB ID / WORKFLOW</th>
+                    <th>AGENT</th>
+                    <th>DURATION</th>
+                    <th>ACTIONS</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
+                </thead>
+                <tbody>
+                  {filteredJobs.map((job) => (
+                    <tr 
+                      key={job.id} 
+                      className={`hover cursor-pointer transition-colors ${selectedJob?.id === job.id ? 'bg-base-200' : ''}`}
+                      onClick={() => setSelectedJob(job)}
+                    >
+                      <td>
+                        <div className={`badge gap-2 ${
+                            job.status === 'running' ? 'badge-info' :
+                            job.status === 'completed' ? 'badge-success' :
+                            job.status === 'failed' ? 'badge-error' :
+                            'badge-ghost'
+                        } ${job.status !== 'pending' ? 'text-white' : ''} font-medium p-3`}>
+                            {getStatusIcon(job.status)}
+                            {getStatusLabel(job.status)}
+                        </div>
+                      </td>
+                      <td>
+                        <div>
+                          <div className="flex items-baseline gap-2">
+                             <span className="font-mono text-xs opacity-50">#{job.id.slice(0, 8)}</span>
+                             <span className="font-bold">{(job.command || job.script || 'Build').split(' ')[0]}</span>
+                          </div>
+                          <div className="flex items-center gap-2 text-xs text-base-content/60 mt-1">
+                            <span className="font-mono bg-base-300 px-1 rounded">{job.id.slice(-7)}</span>
+                            <span className="truncate max-w-[200px]">{(job.command || job.script || '').substring(0, 30)}</span>
+                          </div>
+                        </div>
+                      </td>
+                      <td>
+                        <div className="badge badge-ghost font-mono text-xs">
+                           🖥️ {job.worker_id ? `M1-${job.worker_id.slice(0, 4)}` : '—'}
+                        </div>
+                      </td>
+                      <td className="font-mono text-sm">{formatDuration(job)}</td>
+                      <td>
+                        <Link 
+                          to={`/jobs/${job.id}`}
+                          className="btn btn-ghost btn-sm btn-circle"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          →
+                        </Link>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Live Log Panel */}

@@ -1,7 +1,7 @@
 //! API key management routes
 
 use axum::{
-    extract::{Extension, Path, State},
+    extract::{Path, State},
     http::StatusCode,
     Json,
 };
@@ -16,7 +16,7 @@ use crate::services::supabase::ApiKeyInfo;
 /// POST /api/v1/auth/keys - Create a new API key
 pub async fn create_api_key(
     State(state): State<AppState>,
-    Extension(user): Extension<AuthUser>,
+    user: AuthUser,
     Json(request): Json<CreateApiKeyRequest>,
 ) -> Result<(StatusCode, Json<CreateApiKeyResponse>), (StatusCode, Json<ApiError>)> {
     // Generate new API key
@@ -49,7 +49,7 @@ pub async fn create_api_key(
 /// GET /api/v1/auth/keys - List user's API keys
 pub async fn list_api_keys(
     State(state): State<AppState>,
-    Extension(user): Extension<AuthUser>,
+    user: AuthUser,
 ) -> Result<Json<Vec<ApiKeyInfo>>, (StatusCode, Json<ApiError>)> {
     match state.supabase.list_api_keys(user.user_id).await {
         Ok(keys) => Ok(Json(keys)),
@@ -66,7 +66,7 @@ pub async fn list_api_keys(
 /// DELETE /api/v1/auth/keys/:key_id - Delete an API key
 pub async fn delete_api_key(
     State(state): State<AppState>,
-    Extension(user): Extension<AuthUser>,
+    user: AuthUser,
     Path(key_id): Path<Uuid>,
 ) -> Result<StatusCode, (StatusCode, Json<ApiError>)> {
     match state.supabase.delete_api_key(user.user_id, key_id).await {
@@ -97,7 +97,7 @@ pub struct CurrentUser {
 }
 
 pub async fn get_current_user(
-    Extension(user): Extension<AuthUser>,
+    user: AuthUser,
 ) -> Json<CurrentUser> {
     Json(CurrentUser {
         user_id: user.user_id,
@@ -195,4 +195,3 @@ pub async fn register(
         }
     }
 }
-

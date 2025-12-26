@@ -1,8 +1,9 @@
 //! Authentication middleware using Supabase Auth
 
 use axum::{
-    extract::{Request, State},
-    http::{header, StatusCode},
+    async_trait,
+    extract::{FromRef, FromRequestParts, Request, State},
+    http::{header, request::Parts, StatusCode},
     middleware::Next,
     response::Response,
     Json,
@@ -48,7 +49,48 @@ pub struct ApiKeyRecord {
     pub last_used_at: Option<chrono::DateTime<chrono::Utc>>,
 }
 
+/// Extractor implementation for AuthUser
+#[async_trait]
+impl<S> FromRequestParts<S> for AuthUser
+where
+    AppState: FromRef<S>,
+    S: Send + Sync,
+{
+    type Rejection = (StatusCode, Json<ApiError>);
+
+    async fn from_request_parts(parts: &mut Parts, state: &S) -> Result<Self, Self::Rejection> {
+        let state = AppState::from_ref(state);
+
+        // Check for Authorization header
+        let auth_header = parts
+            .headers
+            .get(header::AUTHORIZATION)
+            .and_then(|h| h.to_str().ok());
+
+        match auth_header {
+            Some(header) if header.starts_with("Bearer ") => {
+                let token = &header[7..];
+                verify_jwt(&state, token).await
+            }
+            Some(header) if header.starts_with("ApiKey ") => {
+                let key = &header[7..];
+                verify_api_key(&state, key).await
+            }
+            _ => Err((
+                StatusCode::UNAUTHORIZED,
+                Json(ApiError::new(
+                    "Missing or invalid Authorization header. Use 'Bearer <jwt>' or 'ApiKey <key>'",
+                    "unauthorized",
+                )),
+            )),
+        }
+    }
+}
+
 /// Authentication middleware
+/// Note: This is now largely redundant if handlers use AuthUser extractor,
+/// but kept for handlers that need auth but don't need the user object,
+/// or for routes that still rely on Extension<AuthUser>
 pub async fn auth_middleware(
     State(state): State<AppState>,
     mut request: Request,
