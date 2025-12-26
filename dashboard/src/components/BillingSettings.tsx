@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { fetchSubscription, createCheckoutSession, createPortalSession } from '../lib/api'
 import type { Subscription } from '../types'
 
-export default function Billing() {
+export default function BillingSettings() {
   const [subscription, setSubscription] = useState<Subscription | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -68,9 +68,7 @@ export default function Billing() {
     : 0
 
   return (
-    <div style={{ maxWidth: '800px', margin: '0 auto' }}>
-      <h1>Billing</h1>
-
+    <div>
       {error && (
         <div className="card" style={{ background: 'var(--error)', marginBottom: '1rem' }}>
           <p style={{ color: 'white', margin: 0 }}>{error}</p>
@@ -161,7 +159,7 @@ export default function Billing() {
       </div>
 
       {/* Plans */}
-      <h2>Available Plans</h2>
+      <h2 style={{ marginTop: '2rem' }}>Available Plans</h2>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1rem' }}>
         
         {/* Pro Plan */}

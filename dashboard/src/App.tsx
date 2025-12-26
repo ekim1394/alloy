@@ -5,7 +5,6 @@ import Dashboard from './pages/Dashboard'
 import Login from './pages/Login'
 import Signup from './pages/Signup'
 import Settings from './pages/Settings'
-import Billing from './pages/Billing'
 import BillingSetup from './pages/BillingSetup'
 import JobDetail from './pages/JobDetail'
 import Landing from './pages/Landing'
@@ -61,7 +60,7 @@ function NavBar() {
             {user ? (
               <>
                 <Link to="/settings">Settings</Link>
-                <Link to="/billing">Billing</Link>
+                <Link to="/settings?tab=billing">Billing</Link>
                 <button 
                   className="btn" 
                   onClick={handleSignOut}
@@ -182,7 +181,6 @@ function AppContent() {
           <Route path="/login" element={<Dashboard />} />
           <Route path="/signup" element={<Dashboard />} />
           <Route path="/settings" element={<Settings />} />
-          <Route path="/billing" element={<Billing />} />
           <Route path="/jobs/:jobId" element={<JobDetail />} />
           <Route path="/agents" element={<div className="page-placeholder"><h2>Agents</h2><p className="placeholder-text">Agent management coming soon...</p></div>} />
           <Route path="/history" element={<div className="page-placeholder"><h2>Build History</h2><p className="placeholder-text">Build history coming soon...</p></div>} />
