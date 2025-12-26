@@ -61,3 +61,32 @@ export interface ApiError {
   message: string
   error_type: string
 }
+
+// Billing types
+export type SubscriptionPlan = 'pro' | 'team'
+export type SubscriptionStatus = 'active' | 'trialing' | 'past_due' | 'canceled'
+
+export interface Subscription {
+  id: string
+  user_id: string
+  stripe_customer_id: string | null
+  stripe_subscription_id: string | null
+  plan: SubscriptionPlan
+  status: SubscriptionStatus
+  trial_ends_at: string | null
+  minutes_included: number
+  minutes_used: number
+  current_period_start: string | null
+  current_period_end: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface CheckoutResponse {
+  url: string
+  sessionId: string
+}
+
+export interface PortalResponse {
+  url: string
+}

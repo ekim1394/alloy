@@ -98,3 +98,58 @@ export function getWebSocketUrl(jobId: string): string {
   const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
   return `${wsProtocol}//${window.location.host}/api/v1/jobs/${jobId}/logs`
 }
+
+// ===== Billing API (via Supabase) =====
+
+import { supabase } from './supabase'
+import type { Subscription, CheckoutResponse, PortalResponse } from '../types'
+
+export async function fetchSubscription(): Promise<Subscription | null> {
+  const { data, error } = await supabase
+    .from('subscriptions')
+    .select('*')
+    .single()
+  
+  if (error) {
+    // PGRST116 means no rows found - new user without subscription
+    if (error.code === 'PGRST116') {
+      return null
+    }
+    throw new Error(error.message)
+  }
+  return data
+}
+
+export async function createCheckoutSession(plan: 'pro' | 'team'): Promise<CheckoutResponse> {
+  const { data: { session } } = await supabase.auth.getSession()
+  if (!session) throw new Error('Not authenticated')
+
+  const response = await supabase.functions.invoke('create-checkout', {
+    body: {
+      plan,
+      successUrl: `${window.location.origin}/settings?checkout=success`,
+      cancelUrl: `${window.location.origin}/settings?checkout=cancel`,
+    },
+  })
+
+  if (response.error) {
+    throw new Error(response.error.message || 'Failed to create checkout session')
+  }
+  return response.data
+}
+
+export async function createPortalSession(): Promise<PortalResponse> {
+  const { data: { session } } = await supabase.auth.getSession()
+  if (!session) throw new Error('Not authenticated')
+
+  const response = await supabase.functions.invoke('create-portal', {
+    body: {
+      returnUrl: `${window.location.origin}/settings`,
+    },
+  })
+
+  if (response.error) {
+    throw new Error(response.error.message || 'Failed to create portal session')
+  }
+  return response.data
+}
