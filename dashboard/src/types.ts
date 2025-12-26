@@ -32,7 +32,7 @@ export interface JobWithLogs {
   logs?: LogEntry[]
 }
 
-export interface CreateJobResponse {
+interface CreateJobResponse {
   job_id: string
   status: JobStatus
   stream_url: string
@@ -57,7 +57,7 @@ export interface CreateApiKeyResponse {
   name: string
 }
 
-export interface ApiError {
+interface ApiError {
   message: string
   error_type: string
 }

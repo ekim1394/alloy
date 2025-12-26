@@ -6,17 +6,13 @@ import {
   XCircle, 
   Clock, 
   Search, 
-  RotateCw, 
-  Plus, 
   Server, 
   Activity,
   ArrowUpRight,
-  ArrowDownRight
 } from 'lucide-react'
 import { fetchJobs } from '../lib/api'
 import type { Job } from '../types'
 import LiveLogPanel from '../components/LiveLogPanel'
-import EmptyState from '../assets/empty-state.png'
 
 function Dashboard() {
   const [selectedJob, setSelectedJob] = useState<Job | null>(null)
@@ -26,7 +22,6 @@ function Dashboard() {
   const { 
     data: jobs = [], 
     isLoading, 
-    refetch 
   } = useQuery<Job[]>({
     queryKey: ['jobs'],
     queryFn: () => fetchJobs(),
@@ -83,77 +78,7 @@ function Dashboard() {
         {/* Header */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div>
-            <h1 className="text-3xl font-bold tracking-tight">Overview</h1>
             <p className="text-base-content/60 mt-1 font-medium">Monitor Apple Silicon build clusters and agent status.</p>
-          </div>
-        </div>
-
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <div className="card bg-base-100 shadow-sm border border-base-200">
-            <div className="card-body p-6">
-              <div className="flex justify-between items-start">
-                <div>
-                  <div className="stat-title text-base-content/60 font-medium">Active Builds</div>
-                  <div className="stat-value text-primary mt-2">{activeBuilds}</div>
-                </div>
-                <div className="p-2 bg-primary/10 rounded-lg text-primary">
-                  <Activity size={24} />
-                </div>
-              </div>
-              <div className="stat-desc text-success flex items-center gap-1 mt-2 font-medium">
-                <ArrowUpRight size={14} /> 1 since last hour
-              </div>
-            </div>
-          </div>
-
-          <div className="card bg-base-100 shadow-sm border border-base-200">
-            <div className="card-body p-6">
-              <div className="flex justify-between items-start">
-                <div>
-                  <div className="stat-title text-base-content/60 font-medium">Avg Queue Time</div>
-                  <div className="stat-value mt-2">45s</div>
-                </div>
-                <div className="p-2 bg-base-200 rounded-lg text-base-content/70">
-                  <Clock size={24} />
-                </div>
-              </div>
-              <div className="stat-desc text-success flex items-center gap-1 mt-2 font-medium">
-                <ArrowDownRight size={14} /> 12s from yesterday
-              </div>
-            </div>
-          </div>
-
-          <div className="card bg-base-100 shadow-sm border border-base-200">
-            <div className="card-body p-6">
-              <div className="flex justify-between items-start">
-                <div>
-                  <div className="stat-title text-base-content/60 font-medium">Success Rate</div>
-                  <div className="stat-value mt-2">{successRate}%</div>
-                </div>
-                <div className="p-2 bg-success/10 rounded-lg text-success">
-                  <CheckCircle2 size={24} />
-                </div>
-              </div>
-              <div className="stat-desc text-success flex items-center gap-1 mt-2 font-medium">
-                <ArrowUpRight size={14} /> 2.1% this week
-              </div>
-            </div>
-          </div>
-
-          <div className="card bg-base-100 shadow-sm border border-base-200">
-             <div className="card-body p-6">
-              <div className="flex justify-between items-start">
-                <div>
-                  <div className="stat-title text-base-content/60 font-medium">Agents Online</div>
-                  <div className="stat-value mt-2">8<span className="text-xl opacity-40 font-normal">/8</span></div>
-                </div>
-                <div className="p-2 bg-base-200 rounded-lg text-base-content/70">
-                  <Server size={24} />
-                </div>
-              </div>
-              <div className="stat-desc text-success mt-2 font-medium">All systems operational</div>
-            </div>
           </div>
         </div>
 
@@ -194,7 +119,6 @@ function Dashboard() {
              </div>
           ) : filteredJobs.length === 0 ? (
             <div className="flex flex-col items-center justify-center p-16 text-center">
-              <img src={EmptyState} alt="No jobs found" className="w-64 mb-6 opacity-80" />
               <h3 className="text-xl font-bold mb-2">No jobs found</h3>
               <p className="text-base-content/60 max-w-md mb-6">
                 Get started by running your first job using the Alloy CLI.
