@@ -1,38 +1,18 @@
-import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
-
-interface Job {
-  id: string
-  command: string
-  status: string
-  exit_code: number | null
-  created_at: string
-  completed_at: string | null
-}
+import { useQuery } from '@tanstack/react-query'
+import { fetchJobs } from '../lib/api'
+import type { Job } from '../types'
 
 function Dashboard() {
-  const [jobs, setJobs] = useState<Job[]>([])
-  const [loading, setLoading] = useState(true)
-
-  useEffect(() => {
-    fetchJobs()
-    const interval = setInterval(fetchJobs, 5000)
-    return () => clearInterval(interval)
-  }, [])
-
-  const fetchJobs = async () => {
-    try {
-      const res = await fetch('/api/v1/jobs')
-      if (res.ok) {
-        const data = await res.json()
-        setJobs(data.jobs || [])
-      }
-    } catch (err) {
-      console.error('Failed to fetch jobs:', err)
-    } finally {
-      setLoading(false)
-    }
-  }
+  const { 
+    data: jobs = [], 
+    isLoading, 
+    refetch 
+  } = useQuery<Job[]>({
+    queryKey: ['jobs'],
+    queryFn: () => fetchJobs(),
+    refetchInterval: 5000, // Auto-refresh every 5 seconds
+  })
 
   const formatDate = (date: string) => {
     return new Date(date).toLocaleString()
@@ -51,12 +31,12 @@ function Dashboard() {
     <div className="dashboard">
       <div className="page-header">
         <h1>Jobs</h1>
-        <button className="btn" onClick={fetchJobs}>
+        <button className="btn" onClick={() => refetch()}>
           ↻ Refresh
         </button>
       </div>
 
-      {loading ? (
+      {isLoading ? (
         <div className="card">Loading jobs...</div>
       ) : jobs.length === 0 ? (
         <div className="card">
@@ -85,8 +65,8 @@ function Dashboard() {
                 </td>
                 <td>
                   <Link to={`/jobs/${job.id}`} style={{ color: 'var(--accent)' }}>
-                    {job.command.substring(0, 60)}
-                    {job.command.length > 60 ? '...' : ''}
+                    {(job.command || job.script || '').substring(0, 60)}
+                    {(job.command || job.script || '').length > 60 ? '...' : ''}
                   </Link>
                 </td>
                 <td style={{ color: 'var(--text-secondary)' }}>

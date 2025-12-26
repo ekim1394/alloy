@@ -13,12 +13,37 @@ pub mod db;
 use std::net::SocketAddr;
 use axum::Router;
 use axum::extract::DefaultBodyLimit;
-use tower_http::cors::CorsLayer;
+use axum::http::{HeaderValue, Method};
+use tower_http::cors::{CorsLayer, Any};
 use tower_http::trace::TraceLayer;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 use crate::config::Config;
 use crate::state::AppState;
+
+/// Build CORS layer based on environment
+/// - If CORS_ORIGINS is set, allow only those origins
+/// - Otherwise, use permissive mode (for local development)
+fn build_cors_layer() -> CorsLayer {
+    if let Ok(origins) = std::env::var("CORS_ORIGINS") {
+        let allowed_origins: Vec<HeaderValue> = origins
+            .split(',')
+            .filter_map(|s| s.trim().parse().ok())
+            .collect();
+        
+        if !allowed_origins.is_empty() {
+            tracing::info!("CORS configured for: {}", origins);
+            return CorsLayer::new()
+                .allow_origin(allowed_origins)
+                .allow_methods([Method::GET, Method::POST, Method::PUT, Method::DELETE, Method::OPTIONS])
+                .allow_headers(Any)
+                .allow_credentials(true);
+        }
+    }
+    
+    tracing::warn!("CORS: Permissive mode (set CORS_ORIGINS for production)");
+    CorsLayer::permissive()
+}
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
@@ -61,7 +86,7 @@ async fn main() -> anyhow::Result<()> {
         .merge(worker_router)
         .layer(DefaultBodyLimit::max(2 * 1024 * 1024 * 1024)) // 2GB limit
         .layer(TraceLayer::new_for_http())
-        .layer(CorsLayer::permissive())
+        .layer(build_cors_layer())
         .with_state(state);
 
     // Start server
