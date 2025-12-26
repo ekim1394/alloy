@@ -53,20 +53,6 @@ function Landing() {
                 Star on GitHub
               </a>
             </div>
-            <div className="flex items-center gap-4 py-6 border-t border-base-content/10">
-              <div className="avatar-group -space-x-4 rtl:space-x-reverse">
-                <div className="avatar border-base-100">
-                  <div className="w-8 h-8 flex items-center justify-center bg-base-300 text-xs">👤</div>
-                </div>
-                <div className="avatar border-base-100">
-                  <div className="w-8 h-8 flex items-center justify-center bg-base-300 text-xs">👤</div>
-                </div>
-                <div className="avatar border-base-100">
-                  <div className="w-8 h-8 flex items-center justify-center bg-base-300 text-xs">👤</div>
-                </div>
-              </div>
-              <span className="text-sm font-medium text-base-content/60">Trusted by 500+ iOS Engineers</span>
-            </div>
           </div>
           
           <div className="relative">
@@ -126,9 +112,6 @@ function Landing() {
           <p className="text-xs font-bold tracking-[0.2em] text-base-content/50 uppercase mb-8">POWERED BY MODERN INFRASTRUCTURE</p>
           <div className="flex flex-wrap justify-center gap-12 md:gap-20 opacity-70 grayscale hover:grayscale-0 transition-all duration-300">
             <div className="flex items-center gap-3 text-xl font-bold">
-              <span className="text-2xl">🍎</span> Apple Silicon
-            </div>
-            <div className="flex items-center gap-3 text-xl font-bold">
               <span className="text-2xl">🐢</span> Tart
             </div>
             <div className="flex items-center gap-3 text-xl font-bold">
@@ -148,13 +131,6 @@ function Landing() {
           Alloy CI leverages the power of Apple Silicon to deliver the fastest CI experience available today.
         </p>
         <div className="features-grid-new">
-          <div className="feature-card-new">
-            <div className="feature-icon-new">
-              <span>⚡</span>
-            </div>
-            <h3>Instant Startup</h3>
-            <p>Boot macOS VMs in under 1 second. Utilizing Tart's copy-on-write mechanisms for near-instant VM cloning.</p>
-          </div>
           <div className="grid md:grid-cols-3 gap-8">
             <div className="card bg-base-100 border border-base-200 hover:border-primary/50 cursor-default transition-all duration-300 hover:shadow-lg group">
               <div className="card-body p-8">
