@@ -52,6 +52,7 @@ docs/               # Documentation
 ## Current State
 
 **Implemented:**
+
 - Job submission with local file upload
 - VM pool for fast job startup (~1s vs ~30s)
 - Real-time log streaming
@@ -69,6 +70,7 @@ docs/               # Documentation
   - Configurable CORS for production
 
 **Billing Architecture:**
+
 - Uses Supabase Stripe Wrapper for querying Stripe data via SQL
 - Edge Functions for checkout/portal sessions
 - 7-day trial for Pro plan, no free tier
@@ -97,6 +99,7 @@ alloy run -c "xcodebuild build -scheme MyApp"
 ## Environment Variables
 
 ### Worker
+
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `ORCHESTRATOR_URL` | `http://localhost:3000` | API endpoint |
@@ -106,6 +109,7 @@ alloy run -c "xcodebuild build -scheme MyApp"
 | `WORKER_SECRET_KEY` | (none) | Shared auth secret |
 
 ### Orchestrator
+
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `DATABASE_MODE` | `local` | `local` (SQLite) or `supabase` |
@@ -116,6 +120,7 @@ alloy run -c "xcodebuild build -scheme MyApp"
 | `SUPABASE_KEY` | (none) | Required if DATABASE_MODE=supabase |
 
 ### Dashboard
+
 | Variable | Description |
 |----------|-------------|
 | `VITE_SUPABASE_URL` | Supabase project URL |
@@ -123,6 +128,7 @@ alloy run -c "xcodebuild build -scheme MyApp"
 | `VITE_API_URL` | Orchestrator API URL (prod only) |
 
 ### Supabase Edge Functions (Secrets)
+
 | Variable | Description |
 |----------|-------------|
 | `STRIPE_SECRET_KEY` | Stripe API secret key |
@@ -133,27 +139,41 @@ alloy run -c "xcodebuild build -scheme MyApp"
 ## Common Tasks
 
 ### Adding a new CLI command
+
 1. Create `cli/src/commands/yourcommand.rs`
 2. Add to `cli/src/commands/mod.rs`
 3. Register in `cli/src/main.rs`
 
 ### Adding an API endpoint
+
 1. Add handler in `orchestrator/src/routes/`
 2. Register route in `orchestrator/src/main.rs`
 
 ### Modifying job execution
+
 1. Edit `worker/src/executor.rs`
 2. VM lifecycle is in `worker/src/vm_pool.rs`
 
 ### Deploying Edge Functions
+
 ```bash
 supabase functions deploy
 supabase secrets set KEY=value
 ```
+
+## Code Quality
+
+Before committing changes, **ALWAYS** reuse the defined workflow to format and lint the code. This ensures consistency across Rust and TypeScript files.
+
+Use the `check-lint-format` workflow:
+
+- **Rust**: Runs `cargo fmt` and `cargo clippy`
+- **Dashboard**: Runs `prettier` and `eslint`
+
+You can trigger this via the workflow file `.agent/workflows/check-lint-format.md`.
 
 ## Known Issues
 
 - Dead code warnings in `orchestrator/src/auth.rs` (auth middleware not yet used)
 - Dead code warnings in `orchestrator/src/config.rs` (Stripe config fields for future use)
 - `base_image` field in VmPool unused (for future hot-reload of base image)
-

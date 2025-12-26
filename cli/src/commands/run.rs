@@ -12,6 +12,7 @@ use crate::archive;
 use crate::client::AlloyClient;
 use shared::LogEntry;
 
+#[allow(clippy::too_many_lines)]
 pub async fn execute(
     client: AlloyClient,
     command: Option<String>,

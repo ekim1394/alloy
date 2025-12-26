@@ -1,13 +1,29 @@
 # Cloud Setup (Supabase)
 
-This guide covers setting up Jules Mac Runner with [Supabase](https://supabase.com) for managed database and storage.
+This guide covers setting up Jules Mac Runner with [Supabase](https://supabase.com) for managed database, authentication, and storage.
 
 ## 1. Create Supabase Project
 
-1. Go to [supabase.com](https://supabase.com) and create a new project
-2. Note your project URL and anon/service key
+1. Go to [supabase.com](https://supabase.com) and create a new project.
+2. Note your **Project URL** and **Anon/Service Key**.
 
-## 2. Run Database Schema
+## 2. GitHub Authentication
+
+To enable GitHub sign-in:
+
+1. Go to **GitHub Developer Settings** -> **OAuth Apps** -> **New OAuth App**.
+2. **Homepage URL**: `https://<your-project>.supabase.co` (or your custom domain)
+3. **Authorization callback URL**: `https://<your-project>.supabase.co/auth/v1/callback`
+4. Register application.
+5. Copy **Client ID** and **Client Secret**.
+
+In Supabase Dashboard:
+1. Go to **Authentication** -> **Providers**.
+2. Enable **GitHub**.
+3. Enter your **Client ID** and **Client Secret**.
+4. Save.
+
+## 3. Database Schema
 
 In the Supabase SQL Editor, run the schema:
 
@@ -15,57 +31,87 @@ In the Supabase SQL Editor, run the schema:
 -- Copy contents from supabase/schema.sql
 ```
 
-Or using the CLI:
+This creates:
+- Tables: `jobs`, `artifacts`, `users`, `subscriptions`, `job_logs`
+- Buckets: `artifacts`, `sources`
+- RLS Policies for security
+
+## 4. Billing Setup (Stripe)
+
+The project uses Supabase Edge Functions and Stripe Wrapper.
+
+1. Create a **Stripe Account**.
+2. Create two Products (Pro and Team) in Stripe.
+3. Get your **Stripe Secret Key** and **Webhook Switch Secret**.
+
+### Deploy Edge Functions
+
 ```bash
-# Install Supabase CLI
-brew install supabase/tap/supabase
+# Login to Supabase CLI
+supabase login
 
-# Link to your project
-supabase link --project-ref your-project-ref
+# Link check
+supabase link --project-ref <your-project-ref>
 
-# Run migrations
-supabase db push
+# Deploy functions
+supabase functions deploy
 ```
 
-## 3. Configure Environment
+### Set Secrets
 
 ```bash
-cp env.example .env
+supabase secrets set STRIPE_SECRET_KEY=sk_test_...
+supabase secrets set STRIPE_WEBHOOK_SECRET=whsec_...
+supabase secrets set STRIPE_PRO_PRICE_ID=price_...
+supabase secrets set STRIPE_TEAM_PRICE_ID=price_...
 ```
 
-Edit `.env`:
-```bash
-SUPABASE_URL=https://your-project.supabase.co
-SUPABASE_KEY=your-anon-or-service-key
+## 5. Environment Variables
 
-# Orchestrator settings
+### Orchestrator (.env)
+
+```bash
+# Supabase Connection
+DATABASE_MODE=supabase
+SUPABASE_URL=https://<your-project>.supabase.co
+SUPABASE_KEY=<your-service-role-key>
+
+# Server
 PORT=3000
-BASE_URL=http://localhost:3000
+BASE_URL=https://api.alloy-ci.dev
+
+# Security
+WORKER_SECRET_KEY=<generate-a-random-secret>
+CORS_ORIGINS=https://alloy-ci.dev,https://app.alloy-ci.dev
 ```
 
-## 4. Start the Orchestrator
+### Worker (.env)
+
+```bash
+ORCHESTRATOR_URL=https://api.alloy-ci.dev
+WORKER_SECRET_KEY=<same-secret-as-orchestrator>
+```
+
+### Dashboard (.env)
+
+```bash
+VITE_SUPABASE_URL=https://<your-project>.supabase.co
+VITE_SUPABASE_ANON_KEY=<your-anon-key>
+VITE_API_URL=https://api.alloy-ci.dev
+```
+
+## 6. Start the Orchestrator
 
 ```bash
 ./target/release/orchestrator
 ```
 
-You should see:
-```
-INFO orchestrator: Starting Jules Mac Runner on 0.0.0.0:3000
-```
-
-## 5. Verify
+## 7. Verify
 
 ```bash
-curl http://localhost:3000/health
+curl https://api.alloy-ci.dev/health
 # {"status":"ok"}
 ```
-
-## Storage Buckets
-
-The schema creates two storage buckets:
-- `artifacts` - Build artifacts (.ipa, .xcresult)
-- `sources` - Uploaded source archives
 
 ## Next Steps
 

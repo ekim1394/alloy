@@ -76,6 +76,7 @@ pub fn get_commit_sha(source_dir: &Path) -> Result<String> {
 }
 
 /// Get the size of the archive in a human-readable format
+#[allow(clippy::cast_precision_loss)]
 pub fn format_size(bytes: usize) -> String {
     const KB: usize = 1024;
     const MB: usize = KB * 1024;

@@ -211,6 +211,7 @@ impl SupabaseClient {
     }
 
     /// Create a job log entry
+    #[allow(dead_code)]
     pub async fn create_job_log(&self, job_id: Uuid, content: String) -> Result<()> {
         let response = self
             .client
@@ -235,6 +236,7 @@ impl SupabaseClient {
     }
 
     /// Get logs for a job
+    #[allow(dead_code)]
     pub async fn get_job_logs(&self, job_id: Uuid) -> Result<Vec<shared::JobLog>> {
         let response = self
             .client
@@ -523,6 +525,15 @@ impl SupabaseClient {
 
     /// Verify user credentials (for Supabase, use their Auth API)
     pub async fn verify_user(&self, email: &str, password: &str) -> Result<Option<Uuid>> {
+        #[derive(serde::Deserialize)]
+        struct AuthUser {
+            id: Uuid,
+        }
+        #[derive(serde::Deserialize)]
+        struct AuthResponse {
+            user: Option<AuthUser>,
+        }
+
         // Use Supabase Auth API for login
         let response = self
             .client
@@ -543,22 +554,21 @@ impl SupabaseClient {
             return Ok(None);
         }
 
-        #[derive(serde::Deserialize)]
-        struct AuthResponse {
-            user: Option<AuthUser>,
-        }
-
-        #[derive(serde::Deserialize)]
-        struct AuthUser {
-            id: Uuid,
-        }
-
         let auth_response: AuthResponse = response.json().await?;
         Ok(auth_response.user.map(|u| u.id))
     }
 
     /// Create a new user (for Supabase, use their Auth API)
     pub async fn create_user(&self, email: &str, password: &str) -> Result<Uuid> {
+        #[derive(serde::Deserialize)]
+        struct AuthUser {
+            id: Uuid,
+        }
+        #[derive(serde::Deserialize)]
+        struct SignupResponse {
+            user: AuthUser,
+        }
+
         let response = self
             .client
             .post(format!("{}/auth/v1/signup", self.base_url))
@@ -576,16 +586,6 @@ impl SupabaseClient {
             anyhow::bail!("Failed to create user: {error_text}");
         }
 
-        #[derive(serde::Deserialize)]
-        struct SignupResponse {
-            user: AuthUser,
-        }
-
-        #[derive(serde::Deserialize)]
-        struct AuthUser {
-            id: Uuid,
-        }
-
         let signup_response: SignupResponse = response.json().await?;
         Ok(signup_response.user.id)
     }
@@ -593,6 +593,7 @@ impl SupabaseClient {
 
 /// API key record from database (with hash for verification)
 #[derive(Debug, serde::Deserialize)]
+#[allow(dead_code)]
 pub struct ApiKeyRecord {
     pub id: Uuid,
     pub user_id: Uuid,

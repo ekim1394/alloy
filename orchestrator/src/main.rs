@@ -85,7 +85,7 @@ async fn main() -> anyhow::Result<()> {
     tracing::info!("Supabase URL: {}", config.supabase_url);
 
     // Create application state
-    let state = AppState::new(config.clone()).await?;
+    let state = AppState::new(config.clone());
 
     // Log worker auth status
     if config.worker_secret_key.is_some() {

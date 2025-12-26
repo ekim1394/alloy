@@ -396,10 +396,7 @@ impl Subscription {
         if self.status != SubscriptionStatus::Trialing {
             return false;
         }
-        match self.trial_ends_at {
-            Some(end) => Utc::now() < end,
-            None => false,
-        }
+        self.trial_ends_at.is_some_and(|end| Utc::now() < end)
     }
 
     /// Check if trial has expired
@@ -408,10 +405,7 @@ impl Subscription {
         if self.status != SubscriptionStatus::Trialing {
             return false;
         }
-        match self.trial_ends_at {
-            Some(end) => Utc::now() >= end,
-            None => false,
-        }
+        self.trial_ends_at.is_some_and(|end| Utc::now() >= end)
     }
 
     /// Check if the user can run a job
@@ -423,8 +417,8 @@ impl Subscription {
         }
 
         match self.plan {
-            SubscriptionPlan::Team => true, // Unlimited
-            SubscriptionPlan::Pro => true,  // Pro has metered billing
+            // Unlimited
+            SubscriptionPlan::Team | SubscriptionPlan::Pro => true, // Pro has metered billing
         }
     }
 

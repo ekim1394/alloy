@@ -1,6 +1,5 @@
 //! Config command - manage CLI configuration
 
-use anyhow::Result;
 use clap::Subcommand;
 
 #[derive(Subcommand)]
@@ -13,7 +12,7 @@ pub enum ConfigAction {
     Show,
 }
 
-pub async fn execute(action: ConfigAction) -> Result<()> {
+pub fn execute(action: ConfigAction) {
     match action {
         ConfigAction::SetUrl { url } => {
             println!("Setting API URL to: {url}");
@@ -41,5 +40,4 @@ pub async fn execute(action: ConfigAction) -> Result<()> {
             );
         },
     }
-    Ok(())
 }

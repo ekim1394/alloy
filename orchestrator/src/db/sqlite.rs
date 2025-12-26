@@ -251,6 +251,9 @@ impl Database for SqliteDb {
     }
 
     async fn store_artifact(&self, job_id: Uuid, artifact: &Artifact) -> Result<()> {
+        #[allow(clippy::cast_possible_wrap)]
+        let size_bytes = artifact.size_bytes as i64;
+
         sqlx::query(
             r"
             INSERT INTO artifacts (id, job_id, name, path, size_bytes, download_url)
@@ -261,7 +264,7 @@ impl Database for SqliteDb {
         .bind(job_id.to_string())
         .bind(&artifact.name)
         .bind(&artifact.path)
-        .bind(artifact.size_bytes as i64)
+        .bind(size_bytes)
         .bind(&artifact.download_url)
         .execute(&self.pool)
         .await?;
@@ -439,6 +442,7 @@ impl From<ArtifactRow> for Artifact {
         Self {
             name: row.name,
             path: row.path,
+            #[allow(clippy::cast_sign_loss)]
             size_bytes: row.size_bytes as u64,
             download_url: row.download_url,
         }

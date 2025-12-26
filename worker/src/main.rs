@@ -20,6 +20,7 @@ use crate::vm_pool::VmPool;
 use shared::{JobResult, LogEntry, LogStream};
 
 #[tokio::main]
+#[allow(clippy::too_many_lines)]
 async fn main() -> anyhow::Result<()> {
     // Load environment variables
     dotenvy::dotenv().ok();

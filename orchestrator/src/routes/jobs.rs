@@ -126,10 +126,11 @@ pub async fn request_upload(
             state.config.supabase_url, storage_key
         );
         let http_client = reqwest::Client::new();
-        match http_client.head(&check_url).send().await {
-            Ok(resp) => resp.status().is_success(),
-            Err(_) => false,
-        }
+        http_client
+            .head(&check_url)
+            .send()
+            .await
+            .is_ok_and(|resp| resp.status().is_success())
     } else {
         false
     };

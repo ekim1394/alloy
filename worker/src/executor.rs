@@ -108,6 +108,7 @@ impl JobExecutor {
         let artifacts = self.collect_artifacts(job, &vm_ip).await?;
 
         let end_time = Utc::now();
+        #[allow(clippy::cast_precision_loss)]
         let build_minutes = (end_time - start_time).num_seconds() as f64 / 60.0;
 
         Ok(JobResult {
@@ -165,6 +166,7 @@ impl JobExecutor {
     }
 
     /// Clone the base VM image
+    #[allow(dead_code)]
     async fn tart_clone(&self, vm_name: &str) -> Result<()> {
         let output = Command::new("tart")
             .args(["clone", &self.config.tart_base_image, vm_name])
@@ -182,6 +184,7 @@ impl JobExecutor {
     }
 
     /// Start the VM and get its IP address
+    #[allow(dead_code)]
     async fn tart_run(&self, vm_name: &str) -> Result<String> {
         // Start VM in background
         let _child = Command::new("tart")
@@ -262,9 +265,8 @@ impl JobExecutor {
                 while let Ok(Some(line)) = lines.next_line().await {
                     // Write to file
                     {
-                        let mut w = writer.lock().await;
                         let file_entry = format!("[stdout] {line}\n");
-                        let _ = w.write_all(file_entry.as_bytes()).await;
+                        let _ = writer.lock().await.write_all(file_entry.as_bytes()).await;
                     }
 
                     // Send to orchestrator (real-time stream)
@@ -293,9 +295,8 @@ impl JobExecutor {
                 while let Ok(Some(line)) = lines.next_line().await {
                     // Write to file
                     {
-                        let mut w = writer.lock().await;
                         let file_entry = format!("[stderr] {line}\n");
-                        let _ = w.write_all(file_entry.as_bytes()).await;
+                        let _ = writer.lock().await.write_all(file_entry.as_bytes()).await;
                     }
 
                     // Send to orchestrator (real-time stream)
@@ -313,8 +314,7 @@ impl JobExecutor {
         let status = child.wait().await?;
 
         // Flush writer
-        let mut w = log_writer.lock().await;
-        let _ = w.flush().await;
+        log_writer.lock().await.flush().await?;
 
         Ok(status.code().unwrap_or(-1))
     }
@@ -454,6 +454,7 @@ impl JobExecutor {
     }
 
     /// Delete the VM
+    #[allow(dead_code)]
     async fn tart_delete(&self, vm_name: &str) -> Result<()> {
         // First stop the VM if running
         let _ = Command::new("tart").args(["stop", vm_name]).output().await;
@@ -521,7 +522,7 @@ mod tests {
         let line = "-rw-r--r--  1 user  staff  12345678 Oct 25 10:00 app.ipa";
         let artifact = parse_ls_line(line, pattern).expect("Should parse");
         assert_eq!(artifact.name, "app.ipa");
-        assert_eq!(artifact.size_bytes, 12345678);
+        assert_eq!(artifact.size_bytes, 12_345_678);
 
         // Empty line
         assert!(parse_ls_line("", pattern).is_none());

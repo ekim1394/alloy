@@ -17,6 +17,7 @@ Zero configuration required! The database is created automatically.
 
 ```bash
 export SQLITE_PATH=/var/lib/jules/database.db
+export WORKER_SECRET_KEY=shared-secret-123
 ./target/release/orchestrator
 ```
 
@@ -40,6 +41,7 @@ psql jules_mac_runner < supabase/schema.sql
 
 ```bash
 export DATABASE_URL=postgres://user:pass@localhost:5432/jules_mac_runner
+export WORKER_SECRET_KEY=shared-secret-123
 ./target/release/orchestrator
 ```
 
@@ -54,6 +56,7 @@ services:
       - "3000:3000"
     environment:
       - DATABASE_URL=postgres://jules:secret@db:5432/jules
+      - WORKER_SECRET_KEY=shared-secret-123
     depends_on:
       - db
 

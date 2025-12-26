@@ -36,7 +36,7 @@ pub async fn execute(client: AlloyClient, status: Option<&str>) -> Result<()> {
         let command = job
             .command
             .as_deref()
-            .or(job.script.as_ref().map(|_| "[script]"))
+            .or_else(|| job.script.as_ref().map(|_| "[script]"))
             .unwrap_or("-");
 
         // Truncate command if too long

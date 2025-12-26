@@ -28,9 +28,7 @@ async fn handle_log_stream(socket: WebSocket, state: AppState, job_id: Uuid) {
     let (mut sender, mut receiver) = socket.split();
 
     // Get or wait for the log stream for this job
-    let log_tx = if let Some(tx) = state.get_log_stream(job_id).await {
-        tx
-    } else {
+    let Some(log_tx) = state.get_log_stream(job_id).await else {
         // Job might not exist or already completed
         let _ = sender
             .send(Message::Text(
@@ -57,8 +55,7 @@ async fn handle_log_stream(socket: WebSocket, state: AppState, job_id: Uuid) {
     // Handle incoming messages (like close)
     while let Some(msg) = receiver.next().await {
         match msg {
-            Ok(Message::Close(_)) => break,
-            Err(_) => break,
+            Ok(Message::Close(_)) | Err(_) => break,
             _ => {},
         }
     }
@@ -74,11 +71,8 @@ pub async fn push_log(
     if let Some(tx) = state.get_log_stream(entry.job_id).await {
         let log_json = serde_json::to_string(&entry).unwrap();
         let _ = tx.send(log_json);
-        Ok(StatusCode::OK)
-    } else {
-        // It's normal for no stream to exist if no one is watching
-        Ok(StatusCode::OK)
     }
+    Ok(StatusCode::OK)
 }
 
 /// GET /`api/v1/jobs/:job_id/logs/stored` - Get stored logs for a job
@@ -88,22 +82,24 @@ pub async fn get_stored_logs(
 ) -> Result<Json<Vec<shared::JobLog>>, (StatusCode, Json<ApiError>)> {
     // Try to get the log file from storage
     // Path: logs/{job_id}.log
-    match state.supabase.download_log_file(job_id).await {
-        Ok(content) => {
+    state.supabase.download_log_file(job_id).await.map_or_else(
+        |_| Ok(Json(vec![])),
+        |content| {
             // Parse content line by line into JobLog entries
             // Format in file: "[STDOUT] line content" or just content
             let logs: Vec<shared::JobLog> = content
                 .lines()
-                .enumerate()
-                .map(|(i, line)| {
+                .map(|line| {
                     // Try to parse stream type if present, otherwise default to stdout
-                    let (stream, content) = if line.starts_with("[STDOUT] ") {
-                        (shared::LogStream::Stdout, &line[9..])
-                    } else if line.starts_with("[STDERR] ") {
-                        (shared::LogStream::Stderr, &line[9..])
-                    } else {
-                        (shared::LogStream::Stdout, line)
-                    };
+                    let (_stream, content) = line.strip_prefix("[STDOUT] ").map_or_else(
+                        || {
+                            line.strip_prefix("[STDERR] ")
+                                .map_or((shared::LogStream::Stdout, line), |stripped| {
+                                    (shared::LogStream::Stderr, stripped)
+                                })
+                        },
+                        |stripped| (shared::LogStream::Stdout, stripped),
+                    );
 
                     shared::JobLog {
                         id: Uuid::new_v4(), // Ephemeral ID
@@ -116,11 +112,7 @@ pub async fn get_stored_logs(
 
             Ok(Json(logs))
         },
-        Err(_) => {
-            // If file not found, return empty list (job might be running or failed before logs uploaded)
-            Ok(Json(vec![]))
-        },
-    }
+    )
 }
 
 /// POST /`api/v1/jobs/:job_id/logs/upload` - Upload complete log file

@@ -30,11 +30,13 @@ pub struct PooledVm {
 /// Pool of pre-warmed VMs
 pub struct VmPool {
     vms: Vec<Arc<Mutex<PooledVm>>>,
+    #[allow(dead_code)]
     base_image: String,
 }
 
 impl VmPool {
     /// Create a new VM pool and initialize VMs
+    #[allow(clippy::too_many_lines)]
     pub async fn new(pool_size: u32, base_image: &str, setup_script: Option<&str>) -> Result<Self> {
         tracing::info!(pool_size = pool_size, "Initializing VM pool...");
 
@@ -66,12 +68,13 @@ impl VmPool {
                 .spawn()?;
 
             // Wait for VM to boot and get IP
-            let ip = if let Some(ip) = Self::wait_for_ip(&vm_name).await {
-                ip
-            } else {
-                tracing::warn!(vm_name = %vm_name, "Failed to get VM IP, will retry later");
-                String::new()
-            };
+            let ip = Self::wait_for_ip(&vm_name).await.map_or_else(
+                || {
+                    tracing::warn!(vm_name = %vm_name, "Failed to get VM IP, will retry later");
+                    String::new()
+                },
+                |ip| ip,
+            );
 
             // Run setup script if provided
             if let Some(script) = setup_script {
@@ -282,16 +285,13 @@ impl VmPool {
         tracing::info!("Shutting down VM pool...");
 
         for vm in &self.vms {
-            let guard = vm.lock().await;
-            tracing::info!(vm_name = %guard.name, "Stopping VM...");
+            let vm_name = vm.lock().await.name.clone();
+            tracing::info!(vm_name = %vm_name, "Stopping VM...");
+
+            let _ = Command::new("tart").args(["stop", &vm_name]).output().await;
 
             let _ = Command::new("tart")
-                .args(["stop", &guard.name])
-                .output()
-                .await;
-
-            let _ = Command::new("tart")
-                .args(["delete", &guard.name])
+                .args(["delete", &vm_name])
                 .output()
                 .await;
         }

@@ -129,6 +129,9 @@ async fn main() -> anyhow::Result<()> {
         Commands::Logs { job_id } => commands::logs::execute(client, &job_id).await,
         Commands::Jobs { status } => commands::jobs::execute(client, status.as_deref()).await,
         Commands::Retry { job_id } => commands::retry::execute(client, &job_id).await,
-        Commands::Config { action } => commands::config::execute(action).await,
+        Commands::Config { action } => {
+            commands::config::execute(action);
+            Ok(())
+        },
     }
 }

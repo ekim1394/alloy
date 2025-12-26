@@ -11,15 +11,19 @@ pub struct Config {
     pub supabase_key: String,
 
     /// Stripe secret key for billing
+    #[allow(dead_code)]
     pub stripe_secret_key: Option<String>,
 
     /// Stripe webhook secret for verifying webhook signatures
+    #[allow(dead_code)]
     pub stripe_webhook_secret: Option<String>,
 
     /// Stripe publishable key (for frontend)
+    #[allow(dead_code)]
     pub stripe_publishable_key: Option<String>,
 
     /// Server port
+    #[allow(dead_code)]
     pub port: u16,
 
     /// Base URL for the API (used in responses)

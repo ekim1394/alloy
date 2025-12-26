@@ -218,6 +218,11 @@ impl AlloyClient {
 
     /// Retry a failed or cancelled job
     pub async fn retry_job(&self, job_id: Uuid) -> Result<Uuid> {
+        #[derive(serde::Deserialize)]
+        struct RetryResponse {
+            new_job_id: Uuid,
+        }
+
         let request = self
             .client
             .post(format!("{}/api/v1/jobs/{}/retry", self.base_url, job_id));
@@ -227,11 +232,6 @@ impl AlloyClient {
         if !response.status().is_success() {
             let error = response.text().await?;
             anyhow::bail!("Failed to retry job: {error}");
-        }
-
-        #[derive(serde::Deserialize)]
-        struct RetryResponse {
-            new_job_id: Uuid,
         }
 
         let resp: RetryResponse = response.json().await?;

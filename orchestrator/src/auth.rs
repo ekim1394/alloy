@@ -32,6 +32,7 @@ pub enum AuthType {
 
 /// Claims from Supabase JWT token
 #[derive(Debug, Deserialize)]
+#[allow(dead_code)]
 struct JwtClaims {
     sub: String, // User ID
     email: Option<String>,
@@ -40,6 +41,7 @@ struct JwtClaims {
 
 /// API key record from database
 #[derive(Debug, Deserialize)]
+#[allow(dead_code)]
 pub struct ApiKeyRecord {
     pub id: Uuid,
     pub user_id: Uuid,
@@ -91,6 +93,7 @@ where
 /// Note: This is now largely redundant if handlers use `AuthUser` extractor,
 /// but kept for handlers that need auth but don't need the user object,
 /// or for routes that still rely on Extension<AuthUser>
+#[allow(dead_code)]
 pub async fn auth_middleware(
     State(state): State<AppState>,
     mut request: Request,
@@ -135,6 +138,12 @@ async fn verify_jwt(
     // Supabase JWTs can be verified by calling the Supabase Auth API
     // or by verifying the signature locally with the JWT secret
 
+    #[derive(Deserialize)]
+    struct SupabaseUser {
+        id: Uuid,
+        email: Option<String>,
+    }
+
     let response = state
         .client
         .get(format!("{}/auth/v1/user", state.config.supabase_url))
@@ -155,12 +164,6 @@ async fn verify_jwt(
             StatusCode::UNAUTHORIZED,
             Json(ApiError::new("Invalid or expired token", "invalid_token")),
         ));
-    }
-
-    #[derive(Deserialize)]
-    struct SupabaseUser {
-        id: Uuid,
-        email: Option<String>,
     }
 
     let user: SupabaseUser = response.json().await.map_err(|e| {
@@ -254,9 +257,9 @@ pub async fn worker_auth_middleware(
     next: Next,
 ) -> Result<Response, (StatusCode, Json<ApiError>)> {
     // If no worker secret is configured, allow all worker connections (backward compatible)
-    let expected_secret = match &state.config.worker_secret_key {
-        Some(secret) => secret,
-        None => return Ok(next.run(request).await),
+    // If no worker secret is configured, allow all worker connections (backward compatible)
+    let Some(expected_secret) = &state.config.worker_secret_key else {
+        return Ok(next.run(request).await);
     };
 
     // Get the secret from the request header

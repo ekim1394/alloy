@@ -1,6 +1,5 @@
 //! Application state shared across handlers
 
-use anyhow::Result;
 use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::RwLock;
@@ -24,16 +23,16 @@ pub struct AppState {
 }
 
 impl AppState {
-    pub async fn new(config: Config) -> Result<Self> {
+    pub fn new(config: Config) -> Self {
         let supabase = SupabaseClient::new(&config.supabase_url, &config.supabase_key);
 
-        Ok(Self {
+        Self {
             config,
             supabase,
             client: reqwest::Client::new(),
             workers: Arc::new(RwLock::new(HashMap::new())),
             log_streams: Arc::new(RwLock::new(HashMap::new())),
-        })
+        }
     }
 
     /// Create a new log stream for a job

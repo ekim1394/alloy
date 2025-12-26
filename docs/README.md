@@ -2,22 +2,32 @@
 
 Welcome to Alloy - the self-hosted iOS/macOS build runner.
 
-## Getting Started
+## Table of Contents
 
-- [**Getting Started Guide**](./getting-started.md) - Quick start in 5 minutes
-- [Installation](./installation.md) - Build and install
-- [Example Configurations](./examples.md) - Sample configs and scripts
+### 🚀 Getting Started
 
-## Setup Guides
+- [**Getting Started Guide**](./getting-started.md)
+  *Quick start guide to get your first build running in 5 minutes.*
+- [**Installation**](./installation.md)
+  *Comprehensive build and installation instructions.*
+- [**Example Configurations**](./examples.md)
+  *Sample configurations and scripts for common use cases.*
 
-- [Cloud Setup](./setup-cloud.md) - Using Supabase (managed)
-- [Self-Hosted Setup](./setup-self-hosted.md) - SQLite or PostgreSQL
+### ☁️ Deployment
 
-## Components
+- [**Cloud Setup (Supabase)**](./setup-cloud.md)
+  *Managed deployment using Supabase. Covers Authentication (GitHub), Database, Storage, and Billing (Stripe).*
+- [**Self-Hosted Setup**](./setup-self-hosted.md)
+  *Guide for self-hosting with SQLite (simplest) or PostgreSQL (production).*
 
-- [Worker Setup](./setup-worker.md) - Configure Mac Mini workers
-- [CLI Usage](./cli-usage.md) - Submit and manage jobs
-- [VM Base Image](./vm-base-image.md) - Custom Tart VM images
+### 🛠️ Components
+
+- [**Worker Setup**](./setup-worker.md)
+  *Setting up Mac Mini workers, configuring Tart, and managing the `WORKER_SECRET_KEY`.*
+- [**CLI Usage**](./cli-usage.md)
+  *Full reference for the `alloy` command-line tool - submission, artifacts, and configuration.*
+- [**VM Base Image**](./vm-base-image.md)
+  *Creating and customizing Tart VM images for iOS/macOS builds.*
 
 ## Architecture
 
