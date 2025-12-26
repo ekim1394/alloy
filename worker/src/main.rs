@@ -82,7 +82,17 @@ async fn main() -> anyhow::Result<()> {
         shutdown_flag.store(true, Ordering::SeqCst);
     });
 
-    let client = OrchestratorClient::new(&config.orchestrator_url);
+    let client = OrchestratorClient::new(
+        &config.orchestrator_url,
+        config.worker_secret_key.clone(),
+    );
+    
+    // Log worker auth status
+    if config.worker_secret_key.is_some() {
+        tracing::info!("Worker authentication enabled (WORKER_SECRET_KEY is set)");
+    } else {
+        tracing::warn!("Worker authentication disabled (WORKER_SECRET_KEY not set)");
+    }
     
     // Register with orchestrator
     let registration = client.register(&config.hostname, config.capacity).await?;

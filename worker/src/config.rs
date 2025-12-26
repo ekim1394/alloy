@@ -24,6 +24,9 @@ pub struct Config {
     
     /// Optional script to run when VM is initialized (e.g., install fastlane)
     pub vm_setup_script: Option<String>,
+    
+    /// Secret key for authenticating with orchestrator (optional)
+    pub worker_secret_key: Option<String>,
 }
 
 impl Config {
@@ -52,6 +55,7 @@ impl Config {
                 .parse()
                 .context("Invalid VM_POOL_SIZE value")?,
             vm_setup_script: std::env::var("VM_SETUP_SCRIPT").ok(),
+            worker_secret_key: std::env::var("WORKER_SECRET_KEY").ok(),
         })
     }
 }

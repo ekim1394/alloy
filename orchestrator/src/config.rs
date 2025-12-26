@@ -18,6 +18,9 @@ pub struct Config {
     
     /// Base URL for the API (used in responses)
     pub base_url: String,
+    
+    /// Secret key for worker authentication (optional)
+    pub worker_secret_key: Option<String>,
 }
 
 impl Config {
@@ -34,6 +37,7 @@ impl Config {
                 .context("Invalid PORT value")?,
             base_url: std::env::var("BASE_URL")
                 .unwrap_or_else(|_| "http://localhost:3000".to_string()),
+            worker_secret_key: std::env::var("WORKER_SECRET_KEY").ok(),
         })
     }
 }

@@ -9,7 +9,17 @@ mod auth_routes;
 use axum::{Router, routing::{get, post, put, delete}};
 use crate::state::AppState;
 
-/// All API routes
+/// Worker routes (middleware applied separately in main.rs)
+pub fn worker_routes() -> Router<AppState> {
+    Router::new()
+        .route("/api/v1/workers/register", post(workers::register_worker))
+        .route("/api/v1/workers/heartbeat", post(workers::heartbeat))
+        .route("/api/v1/workers/claim", post(workers::claim_job))
+        .route("/api/v1/workers/:worker_id/complete", post(workers::complete_job))
+        .route("/api/v1/workers/:worker_id/log", post(logs::push_log))
+}
+
+/// All API routes (except workers, which are merged separately with middleware)
 /// Note: Auth middleware is applied at the handler level via extractors
 /// rather than as a layer to allow mixing public/protected routes
 pub fn api_routes() -> Router<AppState> {
@@ -37,12 +47,4 @@ pub fn api_routes() -> Router<AppState> {
         // Public auth endpoints
         .route("/api/v1/auth/login", post(auth_routes::login))
         .route("/api/v1/auth/register", post(auth_routes::register))
-
-        
-        // Worker management (internal auth via worker tokens)
-        .route("/api/v1/workers/register", post(workers::register_worker))
-        .route("/api/v1/workers/heartbeat", post(workers::heartbeat))
-        .route("/api/v1/workers/claim", post(workers::claim_job))
-        .route("/api/v1/workers/:worker_id/complete", post(workers::complete_job))
-        .route("/api/v1/workers/:worker_id/log", post(logs::push_log))
 }

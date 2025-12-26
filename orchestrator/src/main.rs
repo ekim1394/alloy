@@ -39,11 +39,26 @@ async fn main() -> anyhow::Result<()> {
     tracing::info!("Supabase URL: {}", config.supabase_url);
 
     // Create application state
-    let state = AppState::new(config).await?;
+    let state = AppState::new(config.clone()).await?;
+    
+    // Log worker auth status
+    if config.worker_secret_key.is_some() {
+        tracing::info!("Worker authentication enabled (WORKER_SECRET_KEY is set)");
+    } else {
+        tracing::warn!("Worker authentication disabled (WORKER_SECRET_KEY not set)");
+    }
+
+    // Build worker routes with authentication middleware
+    let worker_router = routes::worker_routes()
+        .layer(axum::middleware::from_fn_with_state(
+            state.clone(),
+            auth::worker_auth_middleware,
+        ));
 
     // Build router with increased body limit for large archive uploads (2GB)
     let app = Router::new()
         .merge(routes::api_routes())
+        .merge(worker_router)
         .layer(DefaultBodyLimit::max(2 * 1024 * 1024 * 1024)) // 2GB limit
         .layer(TraceLayer::new_for_http())
         .layer(CorsLayer::permissive())

@@ -195,3 +195,62 @@ pub struct CreateApiKeyResponse {
     /// The raw API key - only returned once!
     pub key: String,
 }
+
+/// Worker authentication header name
+pub const WORKER_SECRET_HEADER: &str = "X-Worker-Secret";
+
+/// Worker authentication middleware
+/// Validates the X-Worker-Secret header against the configured secret key
+pub async fn worker_auth_middleware(
+    State(state): State<AppState>,
+    request: Request,
+    next: Next,
+) -> Result<Response, (StatusCode, Json<ApiError>)> {
+    // If no worker secret is configured, allow all worker connections (backward compatible)
+    let expected_secret = match &state.config.worker_secret_key {
+        Some(secret) => secret,
+        None => return Ok(next.run(request).await),
+    };
+
+    // Get the secret from the request header
+    let provided_secret = request
+        .headers()
+        .get(WORKER_SECRET_HEADER)
+        .and_then(|h| h.to_str().ok());
+
+    match provided_secret {
+        Some(secret) if constant_time_compare(secret, expected_secret) => {
+            Ok(next.run(request).await)
+        }
+        Some(_) => {
+            tracing::warn!("Worker authentication failed: invalid secret");
+            Err((
+                StatusCode::UNAUTHORIZED,
+                Json(ApiError::new("Invalid worker secret", "invalid_worker_secret")),
+            ))
+        }
+        None => {
+            tracing::warn!("Worker authentication failed: missing X-Worker-Secret header");
+            Err((
+                StatusCode::UNAUTHORIZED,
+                Json(ApiError::new(
+                    "Missing X-Worker-Secret header",
+                    "missing_worker_secret",
+                )),
+            ))
+        }
+    }
+}
+
+/// Constant-time string comparison to prevent timing attacks
+fn constant_time_compare(a: &str, b: &str) -> bool {
+    if a.len() != b.len() {
+        return false;
+    }
+    
+    let mut result = 0u8;
+    for (x, y) in a.bytes().zip(b.bytes()) {
+        result |= x ^ y;
+    }
+    result == 0
+}
