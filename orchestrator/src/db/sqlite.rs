@@ -1,4 +1,7 @@
 //! SQLite database backend for self-hosted deployments
+//! 
+//! Note: Billing/subscription features are only available in cloud mode (Supabase).
+//! Self-hosted SQLite mode has no usage limits.
 
 use anyhow::Result;
 use async_trait::async_trait;
@@ -124,6 +127,9 @@ impl SqliteDb {
         sqlx::query("CREATE INDEX IF NOT EXISTS idx_api_keys_hash ON api_keys(key_hash)")
             .execute(&self.pool)
             .await?;
+
+        // Note: No subscription/billing tables for SQLite (self-hosted mode)
+        // Billing is only available in Supabase (cloud) mode
 
         Ok(())
     }

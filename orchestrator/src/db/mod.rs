@@ -4,6 +4,9 @@
 //! - Supabase (managed cloud)
 //! - SQLite (simple self-hosted)
 //! - PostgreSQL (production self-hosted)
+//!
+//! Note: Billing/subscription operations are handled directly by Supabase
+//! via the Stripe Wrapper and Edge Functions (cloud mode only).
 
 pub mod sqlite;
 

@@ -13,6 +13,12 @@ pub struct Config {
     /// Stripe secret key for billing
     pub stripe_secret_key: Option<String>,
     
+    /// Stripe webhook secret for verifying webhook signatures
+    pub stripe_webhook_secret: Option<String>,
+    
+    /// Stripe publishable key (for frontend)
+    pub stripe_publishable_key: Option<String>,
+    
     /// Server port
     pub port: u16,
     
@@ -31,6 +37,8 @@ impl Config {
             supabase_key: std::env::var("SUPABASE_KEY")
                 .context("SUPABASE_KEY environment variable required")?,
             stripe_secret_key: std::env::var("STRIPE_SECRET_KEY").ok(),
+            stripe_webhook_secret: std::env::var("STRIPE_WEBHOOK_SECRET").ok(),
+            stripe_publishable_key: std::env::var("STRIPE_PUBLISHABLE_KEY").ok(),
             port: std::env::var("PORT")
                 .unwrap_or_else(|_| "3000".to_string())
                 .parse()

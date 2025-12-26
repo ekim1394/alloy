@@ -235,3 +235,229 @@ pub struct RegisterWorkerResponse {
     pub worker_id: Uuid,
     pub token: String,
 }
+
+// ============================================
+// Billing Models
+// ============================================
+
+/// Subscription plan tiers
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
+#[serde(rename_all = "snake_case")]
+pub enum SubscriptionPlan {
+    #[default]
+    Pro,
+    Team,
+}
+
+impl SubscriptionPlan {
+    /// Monthly included minutes for this plan
+    pub fn included_minutes(&self) -> Option<u32> {
+        match self {
+            SubscriptionPlan::Pro => Some(300),
+            SubscriptionPlan::Team => None, // Unlimited
+        }
+    }
+
+    /// Monthly price in cents
+    pub fn price_cents(&self) -> u32 {
+        match self {
+            SubscriptionPlan::Pro => 2000,  // $20
+            SubscriptionPlan::Team => 20000, // $200
+        }
+    }
+
+    /// Whether this plan supports metered billing for overages
+    pub fn has_metered_billing(&self) -> bool {
+        matches!(self, SubscriptionPlan::Pro)
+    }
+
+    /// Trial duration in days
+    pub fn trial_days(&self) -> u32 {
+        7
+    }
+}
+
+impl std::fmt::Display for SubscriptionPlan {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            SubscriptionPlan::Pro => write!(f, "pro"),
+            SubscriptionPlan::Team => write!(f, "team"),
+        }
+    }
+}
+
+impl std::str::FromStr for SubscriptionPlan {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s.to_lowercase().as_str() {
+            "pro" => Ok(SubscriptionPlan::Pro),
+            "team" => Ok(SubscriptionPlan::Team),
+            _ => Err(format!("Unknown plan: {}", s)),
+        }
+    }
+}
+
+/// Subscription status
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
+#[serde(rename_all = "snake_case")]
+pub enum SubscriptionStatus {
+    #[default]
+    Active,
+    PastDue,
+    Canceled,
+    Trialing,
+}
+
+impl std::fmt::Display for SubscriptionStatus {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            SubscriptionStatus::Active => write!(f, "active"),
+            SubscriptionStatus::PastDue => write!(f, "past_due"),
+            SubscriptionStatus::Canceled => write!(f, "canceled"),
+            SubscriptionStatus::Trialing => write!(f, "trialing"),
+        }
+    }
+}
+
+/// User subscription record
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Subscription {
+    pub id: Uuid,
+    pub user_id: Uuid,
+    pub plan: SubscriptionPlan,
+    pub status: SubscriptionStatus,
+    pub stripe_customer_id: Option<String>,
+    pub stripe_subscription_id: Option<String>,
+    pub current_period_start: Option<DateTime<Utc>>,
+    pub current_period_end: Option<DateTime<Utc>>,
+    /// When the trial ends (if on trial)
+    pub trial_ends_at: Option<DateTime<Utc>>,
+    /// Minutes included in the plan
+    pub minutes_included: Option<u32>,
+    /// Minutes used in the current billing period
+    pub minutes_used: f64,
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
+}
+
+impl Subscription {
+    /// Create a new trial subscription for a user (7-day Pro trial)
+    pub fn new_trial(user_id: Uuid) -> Self {
+        let now = Utc::now();
+        let trial_end = now + chrono::Duration::days(7);
+        Self {
+            id: Uuid::new_v4(),
+            user_id,
+            plan: SubscriptionPlan::Pro,
+            status: SubscriptionStatus::Trialing,
+            stripe_customer_id: None,
+            stripe_subscription_id: None,
+            current_period_start: Some(now),
+            current_period_end: None,
+            trial_ends_at: Some(trial_end),
+            minutes_included: Some(300), // Pro plan minutes during trial
+            minutes_used: 0.0,
+            created_at: now,
+            updated_at: now,
+        }
+    }
+
+    /// Check if currently in trial period
+    pub fn is_trial_active(&self) -> bool {
+        if self.status != SubscriptionStatus::Trialing {
+            return false;
+        }
+        match self.trial_ends_at {
+            Some(end) => Utc::now() < end,
+            None => false,
+        }
+    }
+
+    /// Check if trial has expired
+    pub fn is_trial_expired(&self) -> bool {
+        if self.status != SubscriptionStatus::Trialing {
+            return false;
+        }
+        match self.trial_ends_at {
+            Some(end) => Utc::now() >= end,
+            None => false,
+        }
+    }
+
+    /// Check if the user can run a job
+    pub fn can_run_job(&self) -> bool {
+        // Trial expired users cannot run jobs
+        if self.is_trial_expired() {
+            return false;
+        }
+        
+        match self.plan {
+            SubscriptionPlan::Team => true, // Unlimited
+            SubscriptionPlan::Pro => true,  // Pro has metered billing
+        }
+    }
+
+    /// Get remaining minutes (None for unlimited plans)
+    pub fn remaining_minutes(&self) -> Option<f64> {
+        match self.plan {
+            SubscriptionPlan::Team => None,
+            SubscriptionPlan::Pro => {
+                let included = self.minutes_included.unwrap_or(300) as f64;
+                Some((included - self.minutes_used).max(0.0))
+            }
+        }
+    }
+
+    /// Days remaining in trial (None if not on trial)
+    pub fn trial_days_remaining(&self) -> Option<i64> {
+        if self.status != SubscriptionStatus::Trialing {
+            return None;
+        }
+        self.trial_ends_at.map(|end| {
+            let remaining = end - Utc::now();
+            remaining.num_days().max(0)
+        })
+    }
+}
+
+/// Usage record for a single job
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct UsageRecord {
+    pub id: Uuid,
+    pub subscription_id: Uuid,
+    pub job_id: Uuid,
+    pub minutes_used: f64,
+    pub recorded_at: DateTime<Utc>,
+}
+
+/// Response for billing status endpoint
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct BillingStatusResponse {
+    pub subscription: Subscription,
+    pub usage_this_period: f64,
+    pub quota_remaining: Option<f64>,
+    pub can_run_jobs: bool,
+    pub upgrade_required: bool,
+}
+
+/// Request to create a checkout session for plan upgrade
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CreateCheckoutRequest {
+    pub plan: SubscriptionPlan,
+    pub success_url: String,
+    pub cancel_url: String,
+}
+
+/// Response with checkout session URL
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct CheckoutSessionResponse {
+    pub checkout_url: String,
+    pub session_id: String,
+}
+
+/// Response with customer portal URL
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PortalSessionResponse {
+    pub portal_url: String,
+}
