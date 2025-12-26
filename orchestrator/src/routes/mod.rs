@@ -36,6 +36,8 @@ pub fn api_routes() -> Router<AppState> {
         .route("/api/v1/jobs/:job_id/cancel", post(jobs::cancel_job))
         .route("/api/v1/jobs/:job_id/retry", post(jobs::retry_job))
         .route("/api/v1/jobs/:job_id/logs", get(logs::stream_logs))
+        .route("/api/v1/jobs/:job_id/logs/stored", get(logs::get_stored_logs))
+        .route("/api/v1/jobs/:job_id/logs/upload", put(logs::upload_logs))
         .route("/api/v1/jobs/:job_id/artifacts", get(jobs::get_artifacts))
         
         // Auth/API key management (requires auth)
