@@ -65,20 +65,13 @@ impl VmPool {
                 .args(["run", &vm_name, "--no-graphics"])
                 .spawn()?;
             
-            // Wait for VM to boot
-            tokio::time::sleep(std::time::Duration::from_secs(30)).await;
-            
-            // Get IP
-            let ip_output = Command::new("tart")
-                .args(["ip", &vm_name])
-                .output()
-                .await?;
-            
-            let ip = if ip_output.status.success() {
-                String::from_utf8_lossy(&ip_output.stdout).trim().to_string()
-            } else {
-                tracing::warn!(vm_name = %vm_name, "Failed to get VM IP, will retry later");
-                String::new()
+            // Wait for VM to boot and get IP
+            let ip = match Self::wait_for_ip(&vm_name).await {
+                Some(ip) => ip,
+                None => {
+                    tracing::warn!(vm_name = %vm_name, "Failed to get VM IP, will retry later");
+                    String::new()
+                }
             };
             
             // Run setup script if provided
@@ -187,7 +180,32 @@ impl VmPool {
         })
     }
 
-    
+    /// Wait for VM to get an IP address (with timeout)
+    async fn wait_for_ip(vm_name: &str) -> Option<String> {
+        let start = std::time::Instant::now();
+        let timeout = std::time::Duration::from_secs(60);
+
+        while start.elapsed() < timeout {
+             match Command::new("tart")
+                .args(["ip", vm_name])
+                .output()
+                .await
+            {
+                Ok(output) if output.status.success() => {
+                    let ip = String::from_utf8_lossy(&output.stdout).trim().to_string();
+                    if !ip.is_empty() {
+                        return Some(ip);
+                    }
+                }
+                _ => {}
+            }
+
+            tokio::time::sleep(std::time::Duration::from_millis(1000)).await;
+        }
+
+        None
+    }
+
     /// Acquire a ready VM from the pool
     pub async fn acquire(&self) -> Option<Arc<Mutex<PooledVm>>> {
         for vm in &self.vms {
