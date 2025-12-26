@@ -93,7 +93,7 @@ pub async fn execute(client: AlloyClient, job_id: &str) -> Result<()> {
         println!("   Exit code: {}", exit_code);
     }
     if let Some(minutes) = job.build_minutes {
-        println!("   Build time: {:.2} minutes", minutes);
+        println!("   Build time: {}", super::format_build_time(minutes));
     }
 
     Ok(())

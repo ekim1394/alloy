@@ -56,7 +56,7 @@ pub async fn execute(client: AlloyClient, job_id: &str) -> Result<()> {
     }
     
     if let Some(minutes) = job.build_minutes {
-        println!("   Build time: {:.2} minutes", minutes);
+        println!("   Build time: {}", super::format_build_time(minutes));
     }
 
     // Check for artifacts

@@ -4,9 +4,14 @@ use anyhow::Result;
 use std::path::Path;
 use std::process::Command;
 
-/// Create a zip archive of the current directory using git archive
-/// This only includes tracked files, making archives much smaller
+/// Create a zip archive of the current directory
+/// Includes uncommitted changes (working directory state, not just HEAD)
 pub fn create_archive(source_dir: &Path) -> Result<Vec<u8>> {
+    use std::fs::File;
+    use std::io::{Read, Write};
+    use zip::write::FileOptions;
+    use zip::ZipWriter;
+
     // Check if this is a git repo
     let git_check = Command::new("git")
         .args(["rev-parse", "--is-inside-work-tree"])
@@ -19,44 +24,15 @@ pub fn create_archive(source_dir: &Path) -> Result<Vec<u8>> {
         );
     }
 
-    // Use git archive to create a zip of tracked files
+    // Get list of tracked files (respects .gitignore)
     let output = Command::new("git")
-        .args(["archive", "--format=zip", "HEAD"])
+        .args(["ls-files"])
         .current_dir(source_dir)
         .output()?;
 
     if !output.status.success() {
-        let stderr = String::from_utf8_lossy(&output.stderr);
-        // If HEAD doesn't exist (no commits), try archiving working tree
-        if stderr.contains("Not a valid object name") {
-            return create_archive_fallback(source_dir);
-        }
-        anyhow::bail!("git archive failed: {}", stderr);
+        anyhow::bail!("git ls-files failed");
     }
-
-    Ok(output.stdout)
-}
-
-/// Get the current git commit SHA (short form)
-pub fn get_commit_sha(source_dir: &Path) -> Result<String> {
-    let output = Command::new("git")
-        .args(["rev-parse", "--short", "HEAD"])
-        .current_dir(source_dir)
-        .output()?;
-
-    if !output.status.success() {
-        anyhow::bail!("Failed to get git commit SHA");
-    }
-
-    Ok(String::from_utf8_lossy(&output.stdout).trim().to_string())
-}
-
-/// Fallback for repos with no commits - use git ls-files and zip
-fn create_archive_fallback(source_dir: &Path) -> Result<Vec<u8>> {
-    use std::fs::File;
-    use std::io::{Read, Write};
-    use zip::write::FileOptions;
-    use zip::ZipWriter;
 
     let mut buffer = Vec::new();
     
@@ -66,16 +42,6 @@ fn create_archive_fallback(source_dir: &Path) -> Result<Vec<u8>> {
         let options = FileOptions::default()
             .compression_method(zip::CompressionMethod::Deflated)
             .unix_permissions(0o755);
-
-        // Get list of tracked files
-        let output = Command::new("git")
-            .args(["ls-files"])
-            .current_dir(source_dir)
-            .output()?;
-
-        if !output.status.success() {
-            anyhow::bail!("git ls-files failed");
-        }
 
         let files = String::from_utf8_lossy(&output.stdout);
         for file in files.lines() {
@@ -93,6 +59,20 @@ fn create_archive_fallback(source_dir: &Path) -> Result<Vec<u8>> {
     }
     
     Ok(buffer)
+}
+
+/// Get the current git commit SHA (short form)
+pub fn get_commit_sha(source_dir: &Path) -> Result<String> {
+    let output = Command::new("git")
+        .args(["rev-parse", "--short", "HEAD"])
+        .current_dir(source_dir)
+        .output()?;
+
+    if !output.status.success() {
+        anyhow::bail!("Failed to get git commit SHA");
+    }
+
+    Ok(String::from_utf8_lossy(&output.stdout).trim().to_string())
 }
 
 /// Get the size of the archive in a human-readable format

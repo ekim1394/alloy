@@ -146,7 +146,7 @@ pub async fn execute(
                             Print(format!("\n{} Job {} with exit code {}\n", icon, status, exit_code)),
                             ResetColor
                         )?;
-                        println!("   Build time: {:.2} minutes", build_minutes);
+                        println!("   Build time: {}", super::format_build_time(build_minutes));
                         break;
                     } else if let Some(err) = json.get("error") {
                         execute!(
@@ -192,7 +192,7 @@ pub async fn execute(
         println!("   Exit code: {}", exit_code);
     }
     if let Some(minutes) = job.build_minutes {
-        println!("   Build time: {:.2} minutes", minutes);
+        println!("   Build time: {}", super::format_build_time(minutes));
     }
 
     // Check for artifacts
