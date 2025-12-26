@@ -68,12 +68,10 @@ impl VmPool {
                 .spawn()?;
 
             // Wait for VM to boot and get IP
-            let ip = Self::wait_for_ip(&vm_name)
-                .await
-                .unwrap_or_else(|| {
-                    tracing::warn!(vm_name = %vm_name, "Failed to get VM IP, will retry later");
-                    String::new()
-                });
+            let ip = Self::wait_for_ip(&vm_name).await.unwrap_or_else(|| {
+                tracing::warn!(vm_name = %vm_name, "Failed to get VM IP, will retry later");
+                String::new()
+            });
 
             // Run setup script if provided
             if let Some(script) = setup_script {
