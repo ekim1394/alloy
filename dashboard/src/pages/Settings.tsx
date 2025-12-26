@@ -71,7 +71,7 @@ function Settings() {
       <div role="tablist" className="tabs tabs-boxed bg-base-200/50 p-1 mb-8 w-fit">
         <a 
           role="tab" 
-          className={`tab px-6 ${activeTab === 'general' ? 'tab-active  !bg-white shadow-sm' : ''}`}
+          className={`tab px-6 ${activeTab === 'general' ? 'tab-active shadow-md' : ''}`}
           onClick={() => setActiveTab('general')}
         >
           <Key size={16} className="mr-2" />
@@ -79,7 +79,7 @@ function Settings() {
         </a>
         <a 
           role="tab" 
-          className={`tab px-6 ${activeTab === 'billing' ? 'tab-active !bg-white shadow-sm' : ''}`}
+          className={`tab px-6 ${activeTab === 'billing' ? 'tab-active shadow-md' : ''}`}
           onClick={() => setActiveTab('billing')}
         >
           <CreditCard size={16} className="mr-2" />

@@ -39,91 +39,91 @@ function Signup() {
 
   if (success) {
     return (
-      <div className="login-page" style={{ maxWidth: '400px', margin: '4rem auto' }}>
-        <div className="card" style={{ textAlign: 'center' }}>
-          <h2 style={{ marginBottom: '1rem', color: 'var(--success)' }}>✓ Check your email</h2>
-          <p style={{ color: 'var(--text-secondary)', marginBottom: '1.5rem' }}>
-            We've sent a confirmation link to <strong>{email}</strong>
-          </p>
-          <button 
-            className="btn"
-            onClick={() => navigate('/login')}
-          >
-            Back to Login
-          </button>
+      <div className="max-w-[400px] mx-auto mt-16">
+        <div className="card bg-base-100 shadow-xl border border-base-200 text-center">
+          <div className="card-body p-8">
+            <h2 className="text-2xl font-bold mb-4 text-success">✓ Check your email</h2>
+            <p className="text-base-content/60 mb-6">
+              We've sent a confirmation link to <strong>{email}</strong>
+            </p>
+            <button 
+              className="btn btn-outline w-full"
+              onClick={() => navigate('/login')}
+            >
+              Back to Login
+            </button>
+          </div>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="login-page" style={{ maxWidth: '400px', margin: '4rem auto' }}>
-      <div className="card">
-        <h2 style={{ marginBottom: '1.5rem' }}>Create your account</h2>
+    <div className="max-w-[400px] mx-auto mt-16">
+      <div className="card bg-base-100 shadow-xl border border-base-200">
+        <div className="card-body p-8">
+          <h2 className="text-2xl font-bold text-center mb-6">Create your account</h2>
         
-        {error && (
-          <div style={{ 
-            padding: '0.75rem', 
-            background: 'rgba(248, 81, 73, 0.15)', 
-            borderRadius: '6px',
-            marginBottom: '1rem',
-            color: 'var(--error)'
-          }}>
-            {error}
+          {error && (
+            <div className="alert alert-error mb-4 text-sm py-3 text-white">
+              <span>{error}</span>
+            </div>
+          )}
+  
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="form-control w-full">
+              <label className="label py-1">
+                <span className="label-text text-base-content/60">Email</span>
+              </label>
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                className="input input-bordered w-full"
+              />
+            </div>
+  
+            <div className="form-control w-full">
+              <label className="label py-1">
+                <span className="label-text text-base-content/60">Password</span>
+              </label>
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                minLength={6}
+                className="input input-bordered w-full"
+              />
+            </div>
+  
+            <div className="form-control w-full">
+              <label className="label py-1">
+                <span className="label-text text-base-content/60">Confirm Password</span>
+              </label>
+              <input
+                type="password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                required
+                className="input input-bordered w-full"
+              />
+            </div>
+  
+            <button 
+              type="submit" 
+              className="btn btn-primary w-full mt-2" 
+              disabled={loading}
+            >
+              {loading ? <span className="loading loading-spinner"></span> : 'Create account'}
+            </button>
+          </form>
+  
+          <div className="mt-6 text-center text-sm text-base-content/60">
+            Already have an account?{' '}
+            <Link to="/login" className="link link-primary no-underline hover:underline font-medium">Sign in</Link>
           </div>
-        )}
-
-        <form onSubmit={handleSubmit}>
-          <div style={{ marginBottom: '1rem' }}>
-            <label style={{ display: 'block', marginBottom: '0.5rem', color: 'var(--text-secondary)' }}>
-              Email
-            </label>
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-            />
-          </div>
-
-          <div style={{ marginBottom: '1rem' }}>
-            <label style={{ display: 'block', marginBottom: '0.5rem', color: 'var(--text-secondary)' }}>
-              Password
-            </label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              minLength={6}
-            />
-          </div>
-
-          <div style={{ marginBottom: '1.5rem' }}>
-            <label style={{ display: 'block', marginBottom: '0.5rem', color: 'var(--text-secondary)' }}>
-              Confirm Password
-            </label>
-            <input
-              type="password"
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              required
-            />
-          </div>
-
-          <button 
-            type="submit" 
-            className="btn btn-primary" 
-            style={{ width: '100%' }}
-            disabled={loading}
-          >
-            {loading ? 'Creating account...' : 'Create account'}
-          </button>
-        </form>
-
-        <div style={{ marginTop: '1.5rem', textAlign: 'center', color: 'var(--text-secondary)' }}>
-          Already have an account?{' '}
-          <Link to="/login" style={{ color: 'var(--accent)' }}>Sign in</Link>
         </div>
       </div>
     </div>

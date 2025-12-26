@@ -39,46 +39,54 @@ function LiveLogPanel({ job, onClose }: LiveLogPanelProps) {
 
 
   return (
-    <div className="live-log-panel">
-      <div className="log-panel-header">
-        <div className="log-panel-title">
-          <span className={`log-status-dot ${job.status}`}></span>
-          <span className="log-title-text">Job #{job.id.slice(0, 8)} Live Log</span>
+    <div className="fixed top-0 right-0 bottom-0 w-[420px] bg-base-100 border-l border-base-200 shadow-2xl flex flex-col z-50">
+      <div className="p-5 bg-base-200 border-b border-base-200">
+        <div className="flex items-center gap-2 mb-1">
+          <span className={`w-2 h-2 rounded-full ${
+            job.status === 'running' ? 'bg-primary shadow-[0_0_8px] shadow-primary animate-pulse' :
+            job.status === 'completed' ? 'bg-success' :
+            job.status === 'failed' ? 'bg-error' :
+            'bg-base-content/40'
+          }`}></span>
+          <span className="font-semibold text-base-content text-sm">Job #{job.id.slice(0, 8)} Live Log</span>
         </div>
-        <div className="log-panel-meta">
+        <div className="text-xs text-base-content/60">
           Target: {(job.command || job.script || 'Build').split(' ')[0]} • {job.worker_id ? `M1-${job.worker_id.slice(0, 4)}` : 'Pending'}
         </div>
-        <div className="log-panel-actions">
-          <button className="log-action-btn" title="Download">↓</button>
-          <button className="log-action-btn" title="Fullscreen">⛶</button>
-          <button className="log-action-btn close" onClick={onClose} title="Close">●</button>
+        <div className="absolute top-4 right-4 flex gap-2">
+          <button className="btn btn-ghost btn-xs btn-square text-base-content/60 hover:text-base-content" title="Download">↓</button>
+          <button className="btn btn-ghost btn-xs btn-square text-base-content/60 hover:text-base-content" title="Fullscreen">⛶</button>
+          <button className="btn btn-ghost btn-xs btn-square text-error/60 hover:text-error hover:bg-error/10" onClick={onClose} title="Close">●</button>
         </div>
       </div>
 
-      <div className="log-panel-content" ref={logRef}>
-        <div className="log-timestamp">
+      <div className="flex-1 p-4 overflow-y-auto font-mono text-xs leading-relaxed bg-[#050d18] text-gray-400" ref={logRef}>
+        <div className="text-gray-500 text-xs mb-4">
           Build started at {job.started_at ? new Date(job.started_at).toLocaleTimeString() : 'pending'}
         </div>
         
         {logs.length === 0 ? (
-          <div className="log-waiting">
+          <div className="text-gray-500">
             {job.status === 'running' ? (
               <>
-                <div className="log-line">→ Cloning repository...</div>
-                <div className="log-line dim">  Cached credentials found.</div>
-                <div className="log-line">→ Setting up environment...</div>
+                <div className="py-0.5">→ Cloning repository...</div>
+                <div className="py-0.5 opacity-60">  Cached credentials found.</div>
+                <div className="py-0.5">→ Setting up environment...</div>
               </>
             ) : job.status === 'pending' ? (
-              <div className="log-line dim">Waiting for agent...</div>
+              <div className="py-0.5 opacity-60">Waiting for agent...</div>
             ) : (
-              <div className="log-line dim">No logs available</div>
+              <div className="py-0.5 opacity-60">No logs available</div>
             )}
           </div>
         ) : (
           logs.map((line, i) => (
             <div 
               key={i} 
-              className={`log-line ${line.includes('✓') || line.includes('success') || line.includes('complete') ? 'success' : ''} ${line.includes('error') || line.includes('failed') ? 'error' : ''}`}
+              className={`py-0.5 ${
+                line.includes('✓') || line.includes('success') || line.includes('complete') ? 'text-success' : 
+                line.includes('error') || line.includes('failed') ? 'text-error' : ''
+              }`}
             >
               {line}
             </div>

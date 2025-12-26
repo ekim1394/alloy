@@ -86,16 +86,6 @@ function Dashboard() {
             <h1 className="text-3xl font-bold tracking-tight">Overview</h1>
             <p className="text-base-content/60 mt-1 font-medium">Monitor Apple Silicon build clusters and agent status.</p>
           </div>
-          <div className="flex gap-3">
-            <button className="btn btn-outline gap-2" onClick={() => refetch()}>
-              <RotateCw size={16} />
-              Refresh
-            </button>
-            <button className="btn btn-primary gap-2">
-              <Plus size={18} />
-              New Workflow
-            </button>
-          </div>
         </div>
 
         {/* Stats Cards */}
@@ -168,7 +158,7 @@ function Dashboard() {
         </div>
 
         {/* Search & Filters */}
-        <div className="flex flex-col md:flex-row gap-4 items-center">
+        <div className="flex flex-col md:flex-row gap-4 items-center max-w-full">
           <div className="relative flex-1 w-full">
              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-base-content/40">
                 <Search size={18} />
@@ -192,9 +182,6 @@ function Dashboard() {
               <option value="completed">Passed</option>
               <option value="failed">Failed</option>
               <option value="pending">Queued</option>
-            </select>
-            <select className="select select-bordered flex-1 md:flex-none">
-              <option>Agent: Any</option>
             </select>
           </div>
         </div>

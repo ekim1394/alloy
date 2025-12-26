@@ -1,8 +1,6 @@
 import { useState } from 'react'
 import { createCheckoutSession } from '../lib/api'
 
-
-
 export default function BillingSetup() {
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState<string | null>(null)
@@ -20,101 +18,89 @@ export default function BillingSetup() {
   }
 
   return (
-    <div style={{ maxWidth: '700px', margin: '0 auto', padding: '2rem 1rem' }}>
-      <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
-        <h1 style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>
+    <div className="max-w-[700px] mx-auto py-8 px-4">
+      <div className="text-center mb-8">
+        <h1 className="text-3xl font-bold mb-2">
           Welcome to Alloy! 🎉
         </h1>
-        <p style={{ color: 'var(--text-secondary)', fontSize: '1.1rem' }}>
+        <p className="text-lg text-base-content/80 mb-2">
           Start your <strong>7-day free trial</strong> to run macOS CI jobs on your own hardware.
         </p>
-        <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>
+        <p className="text-sm text-base-content/60">
           Add a payment method to get started. You won't be charged until your trial ends.
         </p>
       </div>
 
       {error && (
-        <div className="card" style={{ background: 'var(--error)', marginBottom: '1.5rem' }}>
-          <p style={{ color: 'white', margin: 0 }}>{error}</p>
+        <div className="alert alert-error mb-6 text-white text-center">
+          <span>{error}</span>
         </div>
       )}
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1.5rem' }}>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         
         {/* Pro Plan */}
-        <div className="card" style={{ 
-          border: '2px solid var(--primary)',
-          position: 'relative',
-          overflow: 'hidden'
-        }}>
-          <div style={{
-            position: 'absolute',
-            top: '12px',
-            right: '-30px',
-            background: 'var(--primary)',
-            color: 'white',
-            padding: '0.25rem 2rem',
-            fontSize: '0.7rem',
-            fontWeight: 'bold',
-            transform: 'rotate(45deg)',
-          }}>
+        <div className="card bg-base-100 border-2 border-primary relative overflow-hidden shadow-xl">
+          <div className="absolute top-5 -right-8 bg-primary text-primary-content py-1 px-10 text-xs font-bold rotate-45 shadow-sm">
             POPULAR
           </div>
           
-          <h3 style={{ marginTop: 0 }}>Pro</h3>
-          <p style={{ fontSize: '2.5rem', fontWeight: 'bold', margin: '0.5rem 0' }}>
-            $20<span style={{ fontSize: '1rem', fontWeight: 'normal', color: 'var(--text-secondary)' }}>/month</span>
-          </p>
-          
-          <ul style={{ paddingLeft: '1.25rem', margin: '1.5rem 0', lineHeight: '1.8' }}>
-            <li><strong>300 minutes</strong> included per month</li>
-            <li>Overage billed at $0.05/min</li>
-            <li>Real-time log streaming</li>
-            <li>Artifact collection</li>
-            <li><span style={{ color: 'var(--success)' }}>✓</span> 7-day free trial</li>
-          </ul>
-          
-          <button 
-            className="btn btn-primary" 
-            onClick={() => handleSelectPlan('pro')}
-            disabled={loading !== null}
-            style={{ width: '100%', padding: '0.75rem' }}
-          >
-            {loading === 'pro' ? 'Redirecting to checkout...' : 'Start Free Trial'}
-          </button>
+          <div className="card-body p-6">
+            <h3 className="card-title text-xl">Pro</h3>
+            <p className="text-4xl font-bold my-2">
+              $20<span className="text-base font-normal text-base-content/60">/month</span>
+            </p>
+            
+            <ul className="space-y-3 my-6 text-sm leading-relaxed">
+              <li className="flex gap-2"><span className="font-bold">300 minutes</span> included per month</li>
+              <li className="flex gap-2">Overage billed at $0.05/min</li>
+              <li className="flex gap-2">Real-time log streaming</li>
+              <li className="flex gap-2">Artifact collection</li>
+              <li className="flex gap-2"><span className="text-success font-bold">✓</span> 7-day free trial</li>
+            </ul>
+            
+            <button 
+              className="btn btn-primary w-full"
+              onClick={() => handleSelectPlan('pro')}
+              disabled={loading !== null}
+            >
+              {loading === 'pro' ? <span className="loading loading-spinner"></span> : 'Start Free Trial'}
+            </button>
+          </div>
         </div>
 
         {/* Team Plan */}
-        <div className="card">
-          <h3 style={{ marginTop: 0 }}>Team</h3>
-          <p style={{ fontSize: '2.5rem', fontWeight: 'bold', margin: '0.5rem 0' }}>
-            $200<span style={{ fontSize: '1rem', fontWeight: 'normal', color: 'var(--text-secondary)' }}>/month</span>
-          </p>
-          
-          <ul style={{ paddingLeft: '1.25rem', margin: '1.5rem 0', lineHeight: '1.8' }}>
-            <li><strong>Unlimited minutes</strong></li>
-            <li>No overage charges ever</li>
-            <li>Priority support</li>
-            <li>Team collaboration features</li>
-            <li><span style={{ color: 'var(--success)' }}>✓</span> 7-day free trial</li>
-          </ul>
-          
-          <button 
-            className="btn btn-primary" 
-            onClick={() => handleSelectPlan('team')}
-            disabled={loading !== null}
-            style={{ width: '100%', padding: '0.75rem' }}
-          >
-            {loading === 'team' ? 'Redirecting to checkout...' : 'Start Free Trial'}
-          </button>
+        <div className="card bg-base-100 border border-base-200 shadow-xl">
+          <div className="card-body p-6">
+            <h3 className="card-title text-xl">Team</h3>
+            <p className="text-4xl font-bold my-2">
+              $200<span className="text-base font-normal text-base-content/60">/month</span>
+            </p>
+            
+            <ul className="space-y-3 my-6 text-sm leading-relaxed">
+              <li className="flex gap-2"><span className="font-bold">Unlimited minutes</span></li>
+              <li className="flex gap-2">No overage charges ever</li>
+              <li className="flex gap-2">Priority support</li>
+              <li className="flex gap-2">Team collaboration features</li>
+              <li className="flex gap-2"><span className="text-success font-bold">✓</span> 7-day free trial</li>
+            </ul>
+            
+            <button 
+              className="btn btn-primary w-full"
+              onClick={() => handleSelectPlan('team')}
+              disabled={loading !== null}
+            >
+              {loading === 'team' ? <span className="loading loading-spinner"></span> : 'Start Free Trial'}
+            </button>
+          </div>
         </div>
       </div>
 
-      <div style={{ textAlign: 'center', marginTop: '2rem', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
-        <p style={{ margin: '0.5rem 0' }}>
+      <div className="text-center mt-8 text-xs text-base-content/60 space-y-1">
+        <p>
           🔒 Secure checkout powered by Stripe
         </p>
-        <p style={{ margin: '0.5rem 0' }}>
+        <p>
           Cancel anytime during your trial period — no questions asked.
         </p>
       </div>

@@ -16,7 +16,7 @@ function Sidebar({ onSignOut }: SidebarProps) {
   return (
     <aside className="drawer-side h-full z-20">
       <label htmlFor="my-drawer-2" aria-label="close sidebar" className="drawer-overlay"></label> 
-      <div className="menu p-4 w-64 min-h-full bg-base-200 text-base-content flex flex-col border-r border-base-300">
+      <div className="menu p-4 min-h-full bg-base-200 text-base-content flex flex-col border-r border-base-300">
         <div className="mb-8 px-2">
           <Link to="/" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
             <img src={Logo} alt="Alloy Logo" className="w-8 h-8 object-contain" />
@@ -49,17 +49,6 @@ function Sidebar({ onSignOut }: SidebarProps) {
         </ul>
 
         <div className="mt-auto pt-8">
-          <div className="bg-base-300/50 rounded-lg p-3 mb-4 border border-base-300">
-            <div className="flex justify-between text-xs mb-2 font-medium items-center">
-              <span className="flex items-center gap-1.5 opacity-70">
-                <HardDrive size={14} />
-                Storage
-              </span>
-              <span className="opacity-70">78%</span>
-            </div>
-            <progress className="progress progress-primary w-full h-1.5" value="78" max="100"></progress>
-          </div>
-
           <ul className="menu p-0 gap-2">
             <li>
               <a href="https://github.com/ekim1394/alloy/tree/main/docs" target="_blank" rel="noopener noreferrer">
