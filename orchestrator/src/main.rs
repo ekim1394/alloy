@@ -38,13 +38,24 @@ fn build_cors_layer() -> CorsLayer {
             return CorsLayer::new()
                 .allow_origin(allowed_origins)
                 .allow_methods([Method::GET, Method::POST, Method::PUT, Method::DELETE, Method::OPTIONS])
-                .allow_headers(Any)
+                .allow_headers([
+                    axum::http::header::AUTHORIZATION,
+                    axum::http::header::CONTENT_TYPE,
+                    axum::http::header::ACCEPT,
+                    axum::http::header::ORIGIN,
+                    axum::http::header::HeaderName::from_static("x-worker-secret"),
+                    axum::http::header::HeaderName::from_static("x-job-id"),
+                    axum::http::header::HeaderName::from_static("x-requested-with"),
+                ])
                 .allow_credentials(true);
         }
     }
     
     tracing::warn!("CORS: Permissive mode (set CORS_ORIGINS for production)");
-    CorsLayer::permissive()
+    CorsLayer::new()
+        .allow_origin(tower_http::cors::Any)
+        .allow_methods(tower_http::cors::Any)
+        .allow_headers(tower_http::cors::Any)
 }
 
 #[tokio::main]
