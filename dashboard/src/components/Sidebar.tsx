@@ -65,10 +65,10 @@ function Sidebar({ onSignOut }: SidebarProps) {
           </div>
         </div>
 
-        <Link to="/docs" className="sidebar-nav-item">
+        <a href="https://github.com/ekim1394/alloy/tree/main/docs" target="_blank" rel="noopener noreferrer" className="sidebar-nav-item">
           <span className="sidebar-nav-icon">📄</span>
           Documentation
-        </Link>
+        </a>
 
         {user && (
           <button className="sidebar-signout" onClick={onSignOut}>
