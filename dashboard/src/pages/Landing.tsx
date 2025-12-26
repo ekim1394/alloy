@@ -1,19 +1,23 @@
 import { Link } from 'react-router-dom'
+import { useState } from 'react'
 
 function Landing() {
+  const [activeTab, setActiveTab] = useState<'curl' | 'python'>('python')
+
   return (
     <div className="min-h-screen bg-base-100 flex flex-col font-sans">
       {/* Navigation */}
-      <nav className="navbar bg-base-100/80 backdrop-blur-md border-b border-base-content/10 sticky top-0 z-50">
-        <div className="container mx-auto px-4">
-          <div className="flex-1">
-            <Link to="/" className="btn btn-ghost text-xl font-bold gap-2">
-              <span className="text-2xl">⚡</span> Alloy
+      <nav className="landing-nav">
+        <div className="nav-container">
+          <div className="nav-left">
+            <Link to="/" className="nav-logo">
+              <span className="logo-icon">⚡</span> Alloy CI
             </Link>
-            <div className="hidden md:flex gap-6 ml-8 text-sm font-medium text-base-content/70">
-              <a href="#features" className="hover:text-primary transition-colors">Features</a>
-              <a href="#how-it-works" className="hover:text-primary transition-colors">How It Works</a>
-              <a href="https://github.com/your-repo/alloy" target="_blank" rel="noopener noreferrer" className="hover:text-primary transition-colors">Documentation</a>
+            <div className="nav-menu">
+              <a href="#features">Features</a>
+              <a href="#pricing">Pricing</a>
+              <a href="#api">API</a>
+              <a href="https://github.com/your-repo/alloy" target="_blank" rel="noopener noreferrer">Docs</a>
             </div>
           </div>
           <div className="flex-none gap-2">
@@ -31,12 +35,12 @@ function Landing() {
               <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse"></span>
               Now supporting macOS 15 Sequoia
             </div>
-            <h1 className="text-5xl md:text-7xl font-extrabold tracking-tight mb-6 leading-[1.1]">
-              Supercharge your <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-accent">Xcode CI</span> with Alloy
+            <h1 className="hero-headline">
+              Eliminate the GitHub Tax. <br />
+              <span className="highlight">Reclaim Developer Time.</span>
             </h1>
-            <p className="text-xl text-base-content/70 mb-10 leading-relaxed max-w-lg">
-              The self-hosted runner for Apple Silicon-backed Tart VMs. 
-              Instant startups, and zero maintenance overhead.
+            <p className="hero-tagline">
+              The self-hosted iOS CI runner for Apple Silicon. 50% faster builds, 90% lower costs, and complete privacy.
             </p>
             <div className="flex flex-wrap gap-4 mb-12">
               <Link to="/signup" className="btn btn-primary btn-lg">
@@ -46,7 +50,7 @@ function Landing() {
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5 mr-1">
                   <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
                 </svg>
-                View on GitHub
+                Star on GitHub
               </a>
             </div>
             <div className="flex items-center gap-4 py-6 border-t border-base-content/10">
@@ -101,6 +105,21 @@ function Landing() {
         </div>
       </section>
 
+      {/* Visual Demo Section */}
+      <section className="demo-section">
+        <div className="demo-container">
+          <div className="demo-placeholder">
+            <div className="demo-content">
+              <span className="demo-icon">▶️</span>
+              <p>Live Demo Loading...</p>
+            </div>
+          </div>
+          <p className="demo-caption">
+            See it in action: From CLI command to a fully running Tart VM in <strong>~1 second</strong>.
+          </p>
+        </div>
+      </section>
+
       {/* Tech Stack */}
       <section className="py-16 border-y border-base-content/5 bg-base-200/50">
         <div className="container mx-auto px-6 text-center">
@@ -123,13 +142,18 @@ function Landing() {
       </section>
 
       {/* Features Section */}
-      <section className="py-24" id="features">
-        <div className="container mx-auto px-6">
-          <div className="max-w-3xl mb-16">
-            <h2 className="text-4xl font-extrabold mb-6">Built for Speed and Security</h2>
-            <p className="text-xl text-base-content/70">
-                Alloy leverages the power of Apple Silicon to deliver the fastest CI experience available today.
-            </p>
+      <section className="features-section" id="features">
+        <h2 className="section-heading">Built for Speed and Security</h2>
+        <p className="section-subheading">
+          Alloy CI leverages the power of Apple Silicon to deliver the fastest CI experience available today.
+        </p>
+        <div className="features-grid-new">
+          <div className="feature-card-new">
+            <div className="feature-icon-new">
+              <span>⚡</span>
+            </div>
+            <h3>Instant Startup</h3>
+            <p>Boot macOS VMs in under 1 second. Utilizing Tart's copy-on-write mechanisms for near-instant VM cloning.</p>
           </div>
           <div className="grid md:grid-cols-3 gap-8">
             <div className="card bg-base-100 border border-base-200 hover:border-primary/50 cursor-default transition-all duration-300 hover:shadow-lg group">
@@ -192,10 +216,10 @@ function Landing() {
                 </div>
              </div>
           </div>
-          <div className="order-1 lg:order-2">
-            <h2 className="text-4xl font-extrabold mb-6">Seamless Orchestration</h2>
-            <p className="text-lg text-base-content/70 mb-8 leading-relaxed">
-              Alloy acts as a lightweight bridge between your CI provider (GitHub Actions, GitLab CI) and your Tart VMs. It handles the lifecycle of ephemeral environments automatically.
+          <div className="orchestration-content">
+            <h2>Seamless Orchestration</h2>
+            <p>
+              Alloy CI acts as a lightweight bridge between your CI provider (GitHub Actions, GitLab CI) and your Tart VMs. It handles the lifecycle of ephemeral environments automatically.
             </p>
             <ul className="space-y-4">
               <li className="flex items-center gap-3 text-lg font-medium">
@@ -212,117 +236,150 @@ function Landing() {
         </div>
       </section>
 
-      {/* Real-time Visibility */}
-      <section className="py-24">
-        <div className="container mx-auto px-6 grid lg:grid-cols-2 gap-16 items-center">
-            <div>
-                 <h2 className="text-4xl font-extrabold mb-6">Real-time Visibility</h2>
-                <p className="text-lg text-base-content/70 mb-8 leading-relaxed">
-                Debug faster with streaming logs. Alloy pipes every line directly from the VM to your CI dashboard in real-time. No more "unknown error" failures.
-                </p>
-                <a href="#" className="link link-primary font-bold text-lg no-underline hover:underline">Read the docs →</a>
+      {/* AI-Ready API Section */}
+      <section className="api-section" id="api">
+        <div className="api-container">
+          <div className="api-content">
+            <div className="api-badge">Built for AI Agents</div>
+            <h2>Programmatic Control</h2>
+            <p>
+              Full REST API access to trigger builds, manage VMs, and stream logs. Perfect for building custom workflows or integrating with AI agents.
+            </p>
+            <div className="api-features">
+              <div className="api-feature">
+                <span className="feature-dot"></span>
+                RESTful Endpoints
+              </div>
+              <div className="api-feature">
+                <span className="feature-dot"></span>
+                Websocket Log Streaming
+              </div>
+              <div className="api-feature">
+                <span className="feature-dot"></span>
+                Token-based Auth
+              </div>
             </div>
-             <div>
-                <div className="mockup-code bg-neutral text-neutral-content shadow-2xl">
-                    <div className="px-6 py-2 border-b border-neutral-content/10 flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                            <span className="w-2 h-2 rounded-full bg-success shadow-[0_0_8px] shadow-success"></span>
-                            <span className="text-xs font-medium opacity-70">Build Output • Live</span>
-                        </div>
-                    </div>
-                     <div className="px-6 py-6 font-mono text-sm space-y-2">
-                        <div className="flex gap-4"><span className="opacity-40 select-none">12:34:01</span> Compiling SwiftUI views...</div>
-                         <div className="flex gap-4"><span className="opacity-40 select-none">12:34:02</span> Building target 'MyApp'...</div>
-                          <div className="flex gap-4 text-success"><span className="opacity-40 select-none text-neutral-content">12:34:03</span> ✓ Build succeeded</div>
-                           <div className="flex gap-4"><span className="opacity-40 select-none">12:34:04</span> Running 47 tests...</div>
-                            <div className="flex gap-4 text-success"><span className="opacity-40 select-none text-neutral-content">12:34:15</span> ✓ All tests passed</div>
-                     </div>
-                </div>
+          </div>
+          <div className="api-code-block">
+            <div className="code-header">
+              <div className="code-tabs">
+                <button
+                  className={`code-tab ${activeTab === 'python' ? 'active' : ''}`}
+                  onClick={() => setActiveTab('python')}
+                >
+                  Python
+                </button>
+                <button
+                  className={`code-tab ${activeTab === 'curl' ? 'active' : ''}`}
+                  onClick={() => setActiveTab('curl')}
+                >
+                  cURL
+                </button>
+              </div>
+              <div className="window-controls">
+                <span></span><span></span><span></span>
+              </div>
             </div>
+            <div className="code-content">
+              {activeTab === 'python' ? (
+                <pre><code>
+<span className="keyword">import</span> requests
+
+<span className="comment"># Trigger a build from an AI agent</span>
+response = requests.post(
+    <span className="string">"https://api.alloy-ci.dev/v1/jobs"</span>,
+    headers=<span className="punctuation">{'{'}</span><span className="string">"Authorization"</span>: <span className="string">f"Bearer <span className="variable">{'{api_key}'}</span>"</span><span className="punctuation">{'}'}</span>,
+    json=<span className="punctuation">{'{'}</span><span className="string">"repo"</span>: <span className="string">"my-ios-app"</span>, <span className="string">"branch"</span>: <span className="string">"main"</span><span className="punctuation">{'}'}</span>
+)
+
+print(<span className="string">f"Build started: <span className="variable">{'{response.json()[\'id\']}'}</span>"</span>)
+</code></pre>
+              ) : (
+                <pre><code>
+<span className="comment"># Trigger a build via cURL</span>
+curl -X POST https://api.alloy-ci.dev/v1/jobs \
+  -H <span className="string">"Authorization: Bearer $ALLOY_API_KEY"</span> \
+  -d <span className="string">'{"{\"repo\": \"my-ios-app\", \"branch\": \"main\"}"}'</span>
+</code></pre>
+              )}
+            </div>
+          </div>
         </div>
       </section>
 
       {/* Comparison Table */}
-      <section className="py-24 bg-base-200/50">
-        <div className="container mx-auto px-6 max-w-5xl">
-            <div className="text-center mb-16">
-                <h2 className="text-4xl font-extrabold mb-4">Why switch to Alloy?</h2>
-                <p className="text-lg text-base-content/60">Price comparison for self-hosted runners</p>
-            </div>
-            
-            <div className="overflow-x-auto bg-base-100 rounded-3xl shadow-xl border border-base-200">
-                <table className="table table-lg">
-                    <thead>
-                        <tr className="bg-base-200/50 border-b-base-200">
-                            <th className="px-6 py-6 text-base">Feature</th>
-                            <th className="px-6 py-6 text-base bg-primary/5 text-primary text-center border-x border-primary/10">Alloy (Self-Hosted)</th>
-                            <th className="px-6 py-6 text-base text-center text-base-content/60">Standard Cloud Runner</th>
-                            <th className="px-6 py-6 text-base text-center text-base-content/60">Bare Metal Mac mini</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                         <tr className="border-b-base-200">
-                            <td className="px-6 font-bold">Startup Time</td>
-                            <td className="px-6 text-center bg-primary/5 border-x border-primary/10 text-success font-bold">~3 seconds</td>
-                            <td className="px-6 text-center">2-5+ mins</td>
-                            <td className="px-6 text-center text-success font-bold">Instant (Shared)</td>
-                        </tr>
-                         <tr className="border-b-base-200">
-                            <td className="px-6 font-bold">Environment Isolation</td>
-                            <td className="px-6 text-center bg-primary/5 border-x border-primary/10">
-                                <span className="badge badge-success text-white">100% Ephemeral</span>
-                            </td>
-                            <td className="px-6 text-center">Yes</td>
-                            <td className="px-6 text-center"><span className="badge badge-warning text-white">Dirty State</span></td>
-                        </tr>
-                        <tr className="border-b-base-200">
-                            <td className="px-6 font-bold">Hardware Cost</td>
-                            <td className="px-6 text-center bg-primary/5 border-x border-primary/10 text-success font-bold">One-time</td>
-                            <td className="px-6 text-center">High Recurring</td>
-                            <td className="px-6 text-center text-success font-bold">One-time</td>
-                        </tr>
-                         <tr>
-                            <td className="px-6 font-bold">Maintenance</td>
-                            <td className="px-6 text-center bg-primary/5 border-x border-primary/10 font-medium">Low (Automated)</td>
-                            <td className="px-6 text-center text-success">Zero</td>
-                            <td className="px-6 text-center text-warning">High (Manual)</td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-
+      <section className="comparison-section" id="pricing">
+        <h2 className="section-heading">Why switch to Alloy CI?</h2>
+        <p className="section-subheading">Stop paying the "GitHub Tax" for slow cloud runners.</p>
+        <div className="comparison-table-wrapper">
+          <table className="comparison-table">
+            <thead>
+              <tr>
+                <th>Feature</th>
+                <th className="highlight-col">Alloy CI (Self-Hosted)</th>
+                <th>GitHub Actions</th>
+                <th>CircleCI</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Boot Time</td>
+                <td className="highlight-col"><span className="value-good">~1s (Instant)</span></td>
+                <td><span className="value-neutral">60s+</span></td>
+                <td><span className="value-neutral">60s+</span></td>
+              </tr>
+              <tr>
+                <td>Cost</td>
+                <td className="highlight-col"><span className="value-good">$0 / min</span></td>
+                <td><span className="value-warning">$0.08+ / min</span></td>
+                <td><span className="value-warning">Expensive Tiers</span></td>
+              </tr>
+              <tr>
+                <td>Privacy</td>
+                <td className="highlight-col"><span className="value-good">Local / VPN</span></td>
+                <td><span className="value-neutral">Third-party Cloud</span></td>
+                <td><span className="value-neutral">Third-party Cloud</span></td>
+              </tr>
+              <tr>
+                <td>Data Control</td>
+                <td className="highlight-col"><span className="badge-success">100% Yours</span></td>
+                <td><span className="value-neutral">Shared Infra</span></td>
+                <td><span className="value-neutral">Shared Infra</span></td>
+              </tr>
+            </tbody>
+          </table>
         </div>
       </section>
 
       {/* CTA Section */}
-      <section className="py-24 text-center">
-        <div className="container mx-auto px-6 max-w-4xl">
-            <h2 className="text-4xl md:text-5xl font-extrabold mb-6">Ready to reclaim your build time?</h2>
-            <p className="text-xl text-base-content/60 mb-10">Join hundreds of mobile teams shipping faster with Alloy and Tart.</p>
-            <div className="flex justify-center gap-4">
-               <Link to="/signup" className="btn btn-primary btn-lg min-w-[160px]">
-                Install Now
-              </Link>
-              <a href="https://github.com/your-repo/alloy" className="btn btn-outline btn-lg min-w-[160px]" target="_blank" rel="noopener noreferrer">
-                View Documentation
-              </a>
-            </div>
+      <section className="cta-section-new">
+        <h2>Ready to reclaim your build time?</h2>
+        <p>Join hundreds of mobile teams shipping faster with Alloy CI and Tart.</p>
+        <div className="cta-buttons">
+          <Link to="/signup" className="btn btn-primary btn-lg">
+            Get Started
+          </Link>
+          <a href="https://github.com/your-repo/alloy" className="btn btn-outline btn-lg" target="_blank" rel="noopener noreferrer">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
+            </svg>
+            Star on GitHub
+          </a>
         </div>
       </section>
 
       {/* Footer */}
-      <footer className="footer footer-center p-10 bg-base-200 text-base-content rounded">
-        <div className="grid grid-flow-col gap-4">
-             <a className="link link-hover">Documentation</a>
-            <a className="link link-hover">GitHub</a>
-            <a className="link link-hover">Blog</a>
-            <a className="link link-hover">License</a>
-        </div>
-        <div>
-             <div className="flex justify-center items-center gap-2 font-bold text-xl mb-2">
-                <span>⚡</span> Alloy
-            </div>
-            <p>© 2024 Alloy Runner. Open Source.</p>
+      <footer className="landing-footer-new">
+        <div className="footer-container">
+          <div className="footer-left">
+            <span className="footer-logo">⚡ Alloy CI</span>
+            <span className="footer-copyright">© 2024 Alloy CI. Open Source.</span>
+          </div>
+          <div className="footer-right">
+            <a href="https://github.com/your-repo/alloy/tree/main/docs" target="_blank" rel="noopener noreferrer">Documentation</a>
+            <a href="https://github.com/your-repo/alloy" target="_blank" rel="noopener noreferrer">GitHub</a>
+            <a href="#">License</a>
+          </div>
         </div>
       </footer>
     </div>
