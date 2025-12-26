@@ -1,4 +1,4 @@
-//! Rate limiting configuration using tower_governor
+//! Rate limiting configuration using `tower_governor`
 
 use ::governor::middleware::NoOpMiddleware;
 use axum::http::Request;
@@ -39,7 +39,7 @@ impl KeyExtractor for RateLimitKey {
         // Fall back to X-Real-IP
         if let Some(real_ip) = req.headers().get("x-real-ip") {
             if let Ok(ip) = real_ip.to_str() {
-                return Ok(format!("ip:{}", ip));
+                return Ok(format!("ip:{ip}"));
             }
         }
 

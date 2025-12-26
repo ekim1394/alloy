@@ -57,7 +57,7 @@ impl SupabaseClient {
 
         if !response.status().is_success() {
             let error_text = response.text().await?;
-            anyhow::bail!("Failed to create job: {}", error_text);
+            anyhow::bail!("Failed to create job: {error_text}");
         }
 
         Ok(())
@@ -75,7 +75,7 @@ impl SupabaseClient {
 
         if !response.status().is_success() {
             let error_text = response.text().await?;
-            anyhow::bail!("Failed to get job: {}", error_text);
+            anyhow::bail!("Failed to get job: {error_text}");
         }
 
         let jobs: Vec<Job> = response.json().await?;
@@ -91,7 +91,7 @@ impl SupabaseClient {
         );
 
         if let Some(status_filter) = status {
-            url = format!("{}&status=eq.{}", url, status_filter);
+            url = format!("{url}&status=eq.{status_filter}");
         }
 
         let response = self
@@ -104,7 +104,7 @@ impl SupabaseClient {
 
         if !response.status().is_success() {
             let error_text = response.text().await?;
-            anyhow::bail!("Failed to list jobs: {}", error_text);
+            anyhow::bail!("Failed to list jobs: {error_text}");
         }
 
         Ok(response.json().await?)
@@ -126,7 +126,7 @@ impl SupabaseClient {
 
         if !response.status().is_success() {
             let error_text = response.text().await?;
-            anyhow::bail!("Failed to find pending job: {}", error_text);
+            anyhow::bail!("Failed to find pending job: {error_text}");
         }
 
         let jobs: Vec<Job> = response.json().await?;
@@ -182,7 +182,7 @@ impl SupabaseClient {
 
         if !response.status().is_success() {
             let error_text = response.text().await?;
-            anyhow::bail!("Failed to complete job: {}", error_text);
+            anyhow::bail!("Failed to complete job: {error_text}");
         }
 
         Ok(())
@@ -204,7 +204,7 @@ impl SupabaseClient {
 
         if !response.status().is_success() {
             let error_text = response.text().await?;
-            anyhow::bail!("Failed to update job status: {}", error_text);
+            anyhow::bail!("Failed to update job status: {error_text}");
         }
 
         Ok(())
@@ -228,7 +228,7 @@ impl SupabaseClient {
 
         if !response.status().is_success() {
             let error_text = response.text().await?;
-            anyhow::bail!("Failed to create job log: {}", error_text);
+            anyhow::bail!("Failed to create job log: {error_text}");
         }
 
         Ok(())
@@ -250,7 +250,7 @@ impl SupabaseClient {
 
         if !response.status().is_success() {
             let error_text = response.text().await?;
-            anyhow::bail!("Failed to get job logs: {}", error_text);
+            anyhow::bail!("Failed to get job logs: {error_text}");
         }
 
         let logs: Vec<shared::JobLog> = response.json().await?;
@@ -259,7 +259,7 @@ impl SupabaseClient {
 
     /// Upload log file to Supabase Storage
     pub async fn upload_log_file(&self, job_id: Uuid, data: Vec<u8>) -> Result<()> {
-        let path = format!("logs/{}.log", job_id);
+        let path = format!("logs/{job_id}.log");
 
         let response = self
             .client
@@ -273,7 +273,7 @@ impl SupabaseClient {
 
         if !response.status().is_success() {
             let error_text = response.text().await?;
-            anyhow::bail!("Failed to upload log file: {}", error_text);
+            anyhow::bail!("Failed to upload log file: {error_text}");
         }
 
         Ok(())
@@ -281,7 +281,7 @@ impl SupabaseClient {
 
     /// Download log file from Supabase Storage
     pub async fn download_log_file(&self, job_id: Uuid) -> Result<String> {
-        let path = format!("logs/{}.log", job_id);
+        let path = format!("logs/{job_id}.log");
 
         let response = self
             .client
@@ -324,7 +324,7 @@ impl SupabaseClient {
 
         if !response.status().is_success() {
             let error_text = response.text().await?;
-            anyhow::bail!("Failed to register worker: {}", error_text);
+            anyhow::bail!("Failed to register worker: {error_text}");
         }
 
         Ok(())
@@ -346,7 +346,7 @@ impl SupabaseClient {
 
         if !response.status().is_success() {
             let error_text = response.text().await?;
-            anyhow::bail!("Failed to get artifacts: {}", error_text);
+            anyhow::bail!("Failed to get artifacts: {error_text}");
         }
 
         let artifacts: Vec<Artifact> = response.json().await?;
@@ -374,7 +374,7 @@ impl SupabaseClient {
 
         if !response.status().is_success() {
             let error_text = response.text().await?;
-            anyhow::bail!("Failed to store artifact: {}", error_text);
+            anyhow::bail!("Failed to store artifact: {error_text}");
         }
 
         Ok(())
@@ -387,7 +387,7 @@ impl SupabaseClient {
         file_name: &str,
         body: reqwest::Body,
     ) -> Result<String> {
-        let path = format!("artifacts/{}/{}", job_id, file_name);
+        let path = format!("artifacts/{job_id}/{file_name}");
 
         let response = self
             .client
@@ -401,7 +401,7 @@ impl SupabaseClient {
 
         if !response.status().is_success() {
             let error_text = response.text().await?;
-            anyhow::bail!("Failed to upload artifact: {}", error_text);
+            anyhow::bail!("Failed to upload artifact: {error_text}");
         }
 
         // Return public URL
@@ -424,14 +424,14 @@ impl SupabaseClient {
 
         if !response.status().is_success() {
             let error_text = response.text().await?;
-            anyhow::bail!("Failed to verify API key: {}", error_text);
+            anyhow::bail!("Failed to verify API key: {error_text}");
         }
 
         let keys: Vec<ApiKeyRecord> = response.json().await?;
         Ok(keys.into_iter().next())
     }
 
-    /// Update API key last_used_at timestamp
+    /// Update API key `last_used_at` timestamp
     pub async fn update_api_key_usage(&self, key_id: Uuid) -> Result<()> {
         let response = self
             .client
@@ -474,7 +474,7 @@ impl SupabaseClient {
 
         if !response.status().is_success() {
             let error_text = response.text().await?;
-            anyhow::bail!("Failed to create API key: {}", error_text);
+            anyhow::bail!("Failed to create API key: {error_text}");
         }
 
         Ok(key_id)
@@ -496,7 +496,7 @@ impl SupabaseClient {
 
         if !response.status().is_success() {
             let error_text = response.text().await?;
-            anyhow::bail!("Failed to list API keys: {}", error_text);
+            anyhow::bail!("Failed to list API keys: {error_text}");
         }
 
         let keys: Vec<ApiKeyInfo> = response.json().await?;
@@ -573,7 +573,7 @@ impl SupabaseClient {
 
         if !response.status().is_success() {
             let error_text = response.text().await?;
-            anyhow::bail!("Failed to create user: {}", error_text);
+            anyhow::bail!("Failed to create user: {error_text}");
         }
 
         #[derive(serde::Deserialize)]

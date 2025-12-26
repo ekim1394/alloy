@@ -16,14 +16,14 @@ pub enum ConfigAction {
 pub async fn execute(action: ConfigAction) -> Result<()> {
     match action {
         ConfigAction::SetUrl { url } => {
-            println!("Setting API URL to: {}", url);
+            println!("Setting API URL to: {url}");
             println!("Add this to your shell profile:");
-            println!("  export ALLOY_API_URL=\"{}\"", url);
+            println!("  export ALLOY_API_URL=\"{url}\"");
         },
         ConfigAction::SetKey { key } => {
             println!("Setting API key");
             println!("Add this to your shell profile:");
-            println!("  export ALLOY_API_KEY=\"{}\"", key);
+            println!("  export ALLOY_API_KEY=\"{key}\"");
         },
         ConfigAction::Show => {
             println!("Current configuration:");
@@ -38,7 +38,6 @@ pub async fn execute(action: ConfigAction) -> Result<()> {
                 } else {
                     "(not set)"
                 }
-                .to_string()
             );
         },
     }

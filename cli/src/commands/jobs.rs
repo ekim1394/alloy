@@ -51,7 +51,7 @@ pub async fn execute(client: AlloyClient, status: Option<&str>) -> Result<()> {
         execute!(
             stdout(),
             SetForegroundColor(color),
-            Print(format!("{:<8}", icon)),
+            Print(format!("{icon:<8}")),
             ResetColor,
             Print(format!("{:<12} {:<38} {}\n", time, job.id, command_display)),
         )?;

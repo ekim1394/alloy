@@ -1,7 +1,7 @@
-//! SQLite database backend for self-hosted deployments
+//! `SQLite` database backend for self-hosted deployments
 //!
 //! Note: Billing/subscription features are only available in cloud mode (Supabase).
-//! Self-hosted SQLite mode has no usage limits.
+//! Self-hosted `SQLite` mode has no usage limits.
 
 use anyhow::Result;
 use async_trait::async_trait;
@@ -12,14 +12,14 @@ use uuid::Uuid;
 use super::{ApiKeyInfo, ApiKeyRecord, Database};
 use shared::{Artifact, Job, JobStatus, SourceType, WorkerInfo};
 
-/// SQLite database implementation
+/// `SQLite` database implementation
 #[derive(Clone)]
 pub struct SqliteDb {
     pool: Pool<Sqlite>,
 }
 
 impl SqliteDb {
-    /// Create a new SQLite database connection
+    /// Create a new `SQLite` database connection
     pub async fn new(database_path: &str) -> Result<Self> {
         // Create directory if needed
         if let Some(parent) = std::path::Path::new(database_path).parent() {
@@ -28,7 +28,7 @@ impl SqliteDb {
 
         let pool = SqlitePoolOptions::new()
             .max_connections(5)
-            .connect(&format!("sqlite:{}?mode=rwc", database_path))
+            .connect(&format!("sqlite:{database_path}?mode=rwc"))
             .await?;
 
         let db = Self { pool };
@@ -40,7 +40,7 @@ impl SqliteDb {
     /// Run database migrations
     async fn run_migrations(&self) -> Result<()> {
         sqlx::query(
-            r#"
+            r"
             CREATE TABLE IF NOT EXISTS jobs (
                 id TEXT PRIMARY KEY,
                 customer_id TEXT NOT NULL,
@@ -56,13 +56,13 @@ impl SqliteDb {
                 exit_code INTEGER,
                 build_minutes REAL
             )
-            "#,
+            ",
         )
         .execute(&self.pool)
         .await?;
 
         sqlx::query(
-            r#"
+            r"
             CREATE TABLE IF NOT EXISTS workers (
                 id TEXT PRIMARY KEY,
                 hostname TEXT NOT NULL,
@@ -71,13 +71,13 @@ impl SqliteDb {
                 last_heartbeat TEXT NOT NULL,
                 status TEXT NOT NULL DEFAULT 'online'
             )
-            "#,
+            ",
         )
         .execute(&self.pool)
         .await?;
 
         sqlx::query(
-            r#"
+            r"
             CREATE TABLE IF NOT EXISTS artifacts (
                 id TEXT PRIMARY KEY,
                 job_id TEXT NOT NULL,
@@ -87,13 +87,13 @@ impl SqliteDb {
                 download_url TEXT,
                 FOREIGN KEY (job_id) REFERENCES jobs(id)
             )
-            "#,
+            ",
         )
         .execute(&self.pool)
         .await?;
 
         sqlx::query(
-            r#"
+            r"
             CREATE TABLE IF NOT EXISTS api_keys (
                 id TEXT PRIMARY KEY,
                 user_id TEXT NOT NULL,
@@ -102,20 +102,20 @@ impl SqliteDb {
                 created_at TEXT NOT NULL,
                 last_used_at TEXT
             )
-            "#,
+            ",
         )
         .execute(&self.pool)
         .await?;
 
         sqlx::query(
-            r#"
+            r"
             CREATE TABLE IF NOT EXISTS users (
                 id TEXT PRIMARY KEY,
                 email TEXT UNIQUE,
                 password_hash TEXT,
                 created_at TEXT NOT NULL
             )
-            "#,
+            ",
         )
         .execute(&self.pool)
         .await?;
@@ -139,10 +139,10 @@ impl SqliteDb {
 impl Database for SqliteDb {
     async fn create_job(&self, job: &Job) -> Result<()> {
         sqlx::query(
-            r#"
+            r"
             INSERT INTO jobs (id, customer_id, source_type, source_url, command, script, status, created_at)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-            "#,
+            ",
         )
         .bind(job.id.to_string())
         .bind(job.customer_id.to_string())
@@ -164,27 +164,27 @@ impl Database for SqliteDb {
             .fetch_optional(&self.pool)
             .await?;
 
-        Ok(row.map(|r| r.into()))
+        Ok(row.map(std::convert::Into::into))
     }
 
     async fn claim_pending_job(&self, worker_id: Uuid) -> Result<Option<Job>> {
         // Find and claim a pending job atomically
         let row = sqlx::query_as::<_, JobRow>(
-            r#"
+            r"
             UPDATE jobs 
             SET status = 'running', worker_id = ?, started_at = ?
             WHERE id = (
                 SELECT id FROM jobs WHERE status = 'pending' ORDER BY created_at ASC LIMIT 1
             )
             RETURNING *
-            "#,
+            ",
         )
         .bind(worker_id.to_string())
         .bind(Utc::now().to_rfc3339())
         .fetch_optional(&self.pool)
         .await?;
 
-        Ok(row.map(|r| r.into()))
+        Ok(row.map(std::convert::Into::into))
     }
 
     async fn complete_job(
@@ -195,11 +195,11 @@ impl Database for SqliteDb {
         build_minutes: f64,
     ) -> Result<()> {
         sqlx::query(
-            r#"
+            r"
             UPDATE jobs 
             SET status = ?, exit_code = ?, build_minutes = ?, completed_at = ?
             WHERE id = ?
-            "#,
+            ",
         )
         .bind(status.to_string())
         .bind(exit_code)
@@ -214,15 +214,15 @@ impl Database for SqliteDb {
 
     async fn register_worker(&self, worker: &WorkerInfo) -> Result<()> {
         sqlx::query(
-            r#"
+            r"
             INSERT OR REPLACE INTO workers (id, hostname, capacity, current_jobs, last_heartbeat, status)
             VALUES (?, ?, ?, ?, ?, ?)
-            "#,
+            ",
         )
         .bind(worker.id.to_string())
         .bind(&worker.hostname)
-        .bind(worker.capacity as i64)
-        .bind(worker.current_jobs as i64)
+        .bind(i64::from(worker.capacity))
+        .bind(i64::from(worker.current_jobs))
         .bind(worker.last_heartbeat.to_rfc3339())
         .bind(format!("{:?}", worker.status).to_lowercase())
         .execute(&self.pool)
@@ -247,15 +247,15 @@ impl Database for SqliteDb {
             .fetch_all(&self.pool)
             .await?;
 
-        Ok(rows.into_iter().map(|r| r.into()).collect())
+        Ok(rows.into_iter().map(std::convert::Into::into).collect())
     }
 
     async fn store_artifact(&self, job_id: Uuid, artifact: &Artifact) -> Result<()> {
         sqlx::query(
-            r#"
+            r"
             INSERT INTO artifacts (id, job_id, name, path, size_bytes, download_url)
             VALUES (?, ?, ?, ?, ?, ?)
-            "#,
+            ",
         )
         .bind(Uuid::new_v4().to_string())
         .bind(job_id.to_string())
@@ -275,7 +275,7 @@ impl Database for SqliteDb {
             .fetch_optional(&self.pool)
             .await?;
 
-        Ok(row.map(|r| r.into()))
+        Ok(row.map(std::convert::Into::into))
     }
 
     async fn update_api_key_usage(&self, key_id: Uuid) -> Result<()> {
@@ -292,10 +292,10 @@ impl Database for SqliteDb {
         let key_id = Uuid::new_v4();
 
         sqlx::query(
-            r#"
+            r"
             INSERT INTO api_keys (id, user_id, name, key_hash, created_at)
             VALUES (?, ?, ?, ?, ?)
-            "#,
+            ",
         )
         .bind(key_id.to_string())
         .bind(user_id.to_string())
@@ -316,7 +316,7 @@ impl Database for SqliteDb {
         .fetch_all(&self.pool)
         .await?;
 
-        Ok(rows.into_iter().map(|r| r.into()).collect())
+        Ok(rows.into_iter().map(std::convert::Into::into).collect())
     }
 
     async fn delete_api_key(&self, user_id: Uuid, key_id: Uuid) -> Result<bool> {
@@ -386,7 +386,7 @@ struct JobRow {
 
 impl From<JobRow> for Job {
     fn from(row: JobRow) -> Self {
-        Job {
+        Self {
             id: Uuid::parse_str(&row.id).unwrap_or_default(),
             customer_id: Uuid::parse_str(&row.customer_id).unwrap_or_default(),
             source_type: match row.source_type.as_str() {
@@ -404,9 +404,7 @@ impl From<JobRow> for Job {
                 _ => JobStatus::Pending,
             },
             worker_id: row.worker_id.and_then(|s| Uuid::parse_str(&s).ok()),
-            created_at: chrono::DateTime::parse_from_rfc3339(&row.created_at)
-                .map(|dt| dt.with_timezone(&Utc))
-                .unwrap_or_else(|_| Utc::now()),
+            created_at: chrono::DateTime::parse_from_rfc3339(&row.created_at).map_or_else(|_| Utc::now(), |dt| dt.with_timezone(&Utc)),
             started_at: row.started_at.and_then(|s| {
                 chrono::DateTime::parse_from_rfc3339(&s)
                     .map(|dt| dt.with_timezone(&Utc))
@@ -437,7 +435,7 @@ struct ArtifactRow {
 
 impl From<ArtifactRow> for Artifact {
     fn from(row: ArtifactRow) -> Self {
-        Artifact {
+        Self {
             name: row.name,
             path: row.path,
             size_bytes: row.size_bytes as u64,
@@ -458,14 +456,12 @@ struct ApiKeyRow {
 
 impl From<ApiKeyRow> for ApiKeyRecord {
     fn from(row: ApiKeyRow) -> Self {
-        ApiKeyRecord {
+        Self {
             id: Uuid::parse_str(&row.id).unwrap_or_default(),
             user_id: Uuid::parse_str(&row.user_id).unwrap_or_default(),
             name: row.name,
             key_hash: row.key_hash,
-            created_at: chrono::DateTime::parse_from_rfc3339(&row.created_at)
-                .map(|dt| dt.with_timezone(&Utc))
-                .unwrap_or_else(|_| Utc::now()),
+            created_at: chrono::DateTime::parse_from_rfc3339(&row.created_at).map_or_else(|_| Utc::now(), |dt| dt.with_timezone(&Utc)),
             last_used_at: row.last_used_at.and_then(|s| {
                 chrono::DateTime::parse_from_rfc3339(&s)
                     .map(|dt| dt.with_timezone(&Utc))
@@ -485,12 +481,10 @@ struct ApiKeyInfoRow {
 
 impl From<ApiKeyInfoRow> for ApiKeyInfo {
     fn from(row: ApiKeyInfoRow) -> Self {
-        ApiKeyInfo {
+        Self {
             id: Uuid::parse_str(&row.id).unwrap_or_default(),
             name: row.name,
-            created_at: chrono::DateTime::parse_from_rfc3339(&row.created_at)
-                .map(|dt| dt.with_timezone(&Utc))
-                .unwrap_or_else(|_| Utc::now()),
+            created_at: chrono::DateTime::parse_from_rfc3339(&row.created_at).map_or_else(|_| Utc::now(), |dt| dt.with_timezone(&Utc)),
             last_used_at: row.last_used_at.and_then(|s| {
                 chrono::DateTime::parse_from_rfc3339(&s)
                     .map(|dt| dt.with_timezone(&Utc))

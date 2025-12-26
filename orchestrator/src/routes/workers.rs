@@ -101,7 +101,7 @@ pub async fn claim_job(
     }
 }
 
-/// POST /api/v1/workers/:worker_id/complete - Mark a job as complete
+/// POST /`api/v1/workers/:worker_id/complete` - Mark a job as complete
 pub async fn complete_job(
     State(state): State<AppState>,
     Path(worker_id): Path<Uuid>,
@@ -118,13 +118,13 @@ pub async fn complete_job(
         .supabase
         .complete_job(
             result.job_id,
-            status.clone(),
+            status,
             result.exit_code,
             result.build_minutes,
         )
         .await
     {
-        Ok(_) => {
+        Ok(()) => {
             // Send completion message via log stream before closing
             if let Some(tx) = state.get_log_stream(result.job_id).await {
                 let completion_msg = serde_json::json!({

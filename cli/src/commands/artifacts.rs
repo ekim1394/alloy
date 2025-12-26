@@ -11,7 +11,7 @@ pub async fn execute(client: AlloyClient, job_id: &str, output_dir: &str) -> Res
     let artifacts = client.get_artifacts(job_uuid).await?;
 
     if artifacts.is_empty() {
-        println!("No artifacts found for job {}", job_id);
+        println!("No artifacts found for job {job_id}");
         return Ok(());
     }
 

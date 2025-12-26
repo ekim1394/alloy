@@ -49,7 +49,7 @@ impl OrchestratorClient {
 
         if !response.status().is_success() {
             let error = response.text().await?;
-            anyhow::bail!("Failed to register: {}", error);
+            anyhow::bail!("Failed to register: {error}");
         }
 
         Ok(response.json().await?)
@@ -70,7 +70,7 @@ impl OrchestratorClient {
 
         if !response.status().is_success() {
             let error = response.text().await?;
-            anyhow::bail!("Heartbeat failed: {}", error);
+            anyhow::bail!("Heartbeat failed: {error}");
         }
 
         Ok(())
@@ -89,7 +89,7 @@ impl OrchestratorClient {
 
         if !response.status().is_success() {
             let error = response.text().await?;
-            anyhow::bail!("Failed to claim job: {}", error);
+            anyhow::bail!("Failed to claim job: {error}");
         }
 
         Ok(response.json().await?)
@@ -109,7 +109,7 @@ impl OrchestratorClient {
 
         if !response.status().is_success() {
             let error = response.text().await?;
-            anyhow::bail!("Failed to complete job: {}", error);
+            anyhow::bail!("Failed to complete job: {error}");
         }
 
         Ok(())
@@ -153,7 +153,7 @@ impl OrchestratorClient {
 
         if !response.status().is_success() {
             let error = response.text().await?;
-            anyhow::bail!("Failed to upload log file: {}", error);
+            anyhow::bail!("Failed to upload log file: {error}");
         }
 
         Ok(())
@@ -182,7 +182,7 @@ impl OrchestratorClient {
 
         if !response.status().is_success() {
             let error = response.text().await?;
-            anyhow::bail!("Failed to upload artifact: {}", error);
+            anyhow::bail!("Failed to upload artifact: {error}");
         }
 
         // Return the public URL from the response body (it's a string)

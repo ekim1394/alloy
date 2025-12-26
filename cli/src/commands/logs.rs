@@ -19,7 +19,7 @@ pub async fn execute(client: AlloyClient, job_id: &str) -> Result<()> {
     // Get job status first
     let job = client.get_job(job_id).await?;
 
-    println!("📺 Streaming logs for job {}...", job_id);
+    println!("📺 Streaming logs for job {job_id}...");
     println!("   Status: {:?}", job.status);
     println!();
     println!("{}", "─".repeat(60));
@@ -50,7 +50,7 @@ pub async fn execute(client: AlloyClient, job_id: &str) -> Result<()> {
                         execute!(
                             stdout(),
                             SetForegroundColor(Color::Red),
-                            Print(format!("Error: {}\n", err)),
+                            Print(format!("Error: {err}\n")),
                             ResetColor
                         )?;
                         break;
@@ -61,7 +61,7 @@ pub async fn execute(client: AlloyClient, job_id: &str) -> Result<()> {
                 break;
             },
             Err(e) => {
-                eprintln!("WebSocket error: {}", e);
+                eprintln!("WebSocket error: {e}");
                 break;
             },
             _ => {},
@@ -92,7 +92,7 @@ pub async fn execute(client: AlloyClient, job_id: &str) -> Result<()> {
     )?;
 
     if let Some(exit_code) = job.exit_code {
-        println!("   Exit code: {}", exit_code);
+        println!("   Exit code: {exit_code}");
     }
     if let Some(minutes) = job.build_minutes {
         println!("   Build time: {}", super::format_build_time(minutes));

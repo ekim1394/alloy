@@ -2,8 +2,8 @@
 //!
 //! Supports:
 //! - Supabase (managed cloud)
-//! - SQLite (simple self-hosted)
-//! - PostgreSQL (production self-hosted)
+//! - `SQLite` (simple self-hosted)
+//! - `PostgreSQL` (production self-hosted)
 //!
 //! Note: Billing/subscription operations are handled directly by Supabase
 //! via the Stripe Wrapper and Edge Functions (cloud mode only).
@@ -78,9 +78,9 @@ pub struct ApiKeyInfo {
 pub enum DatabaseBackend {
     /// Supabase (cloud)
     Supabase { url: String, key: String },
-    /// SQLite (self-hosted, simple)
+    /// `SQLite` (self-hosted, simple)
     Sqlite { path: String },
-    /// PostgreSQL (self-hosted, production)
+    /// `PostgreSQL` (self-hosted, production)
     Postgres { url: String },
 }
 

@@ -67,7 +67,7 @@ pub async fn list_api_keys(
     }
 }
 
-/// DELETE /api/v1/auth/keys/:key_id - Delete an API key
+/// DELETE /`api/v1/auth/keys/:key_id` - Delete an API key
 pub async fn delete_api_key(
     State(state): State<AppState>,
     user: AuthUser,

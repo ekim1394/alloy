@@ -18,10 +18,10 @@ pub fn format_build_time(minutes: f64) -> String {
     let secs = total_seconds % 60;
 
     if hours > 0 {
-        format!("{}h {}m {}s", hours, mins, secs)
+        format!("{hours}h {mins}m {secs}s")
     } else if mins > 0 {
-        format!("{}m {}s", mins, secs)
+        format!("{mins}m {secs}s")
     } else {
-        format!("{}s", secs)
+        format!("{secs}s")
     }
 }

@@ -19,13 +19,13 @@ impl AlloyClient {
         Self {
             client: Client::new(),
             base_url: base_url.to_string(),
-            api_key: api_key.map(|s| s.to_string()),
+            api_key: api_key.map(std::string::ToString::to_string),
         }
     }
 
     fn add_auth(&self, request: reqwest::RequestBuilder) -> reqwest::RequestBuilder {
         if let Some(ref key) = self.api_key {
-            request.header("Authorization", format!("Bearer {}", key))
+            request.header("Authorization", format!("Bearer {key}"))
         } else {
             request
         }
@@ -59,7 +59,7 @@ impl AlloyClient {
 
         if !response.status().is_success() {
             let error = response.text().await?;
-            anyhow::bail!("Failed to create job: {}", error);
+            anyhow::bail!("Failed to create job: {error}");
         }
 
         Ok(response.json().await?)
@@ -93,7 +93,7 @@ impl AlloyClient {
 
         if !response.status().is_success() {
             let error = response.text().await?;
-            anyhow::bail!("Failed to get upload URL: {}", error);
+            anyhow::bail!("Failed to get upload URL: {error}");
         }
 
         Ok(response.json().await?)
@@ -117,7 +117,7 @@ impl AlloyClient {
 
         if !response.status().is_success() {
             let error = response.text().await?;
-            anyhow::bail!("Failed to upload archive: {}", error);
+            anyhow::bail!("Failed to upload archive: {error}");
         }
 
         Ok(())
@@ -133,7 +133,7 @@ impl AlloyClient {
 
         if !response.status().is_success() {
             let error = response.text().await?;
-            anyhow::bail!("Failed to start job: {}", error);
+            anyhow::bail!("Failed to start job: {error}");
         }
 
         Ok(response.json().await?)
@@ -149,7 +149,7 @@ impl AlloyClient {
 
         if !response.status().is_success() {
             let error = response.text().await?;
-            anyhow::bail!("Failed to get job: {}", error);
+            anyhow::bail!("Failed to get job: {error}");
         }
 
         Ok(response.json().await?)
@@ -166,7 +166,7 @@ impl AlloyClient {
 
         if !response.status().is_success() {
             let error = response.text().await?;
-            anyhow::bail!("Failed to get artifacts: {}", error);
+            anyhow::bail!("Failed to get artifacts: {error}");
         }
 
         Ok(response.json().await?)
@@ -178,7 +178,7 @@ impl AlloyClient {
             .base_url
             .replace("http://", "ws://")
             .replace("https://", "wss://");
-        format!("{}/api/v1/jobs/{}/logs", ws_base, job_id)
+        format!("{ws_base}/api/v1/jobs/{job_id}/logs")
     }
 
     /// Cancel a running job
@@ -191,7 +191,7 @@ impl AlloyClient {
 
         if !response.status().is_success() {
             let error = response.text().await?;
-            anyhow::bail!("Failed to cancel job: {}", error);
+            anyhow::bail!("Failed to cancel job: {error}");
         }
 
         Ok(())
@@ -202,7 +202,7 @@ impl AlloyClient {
         let mut url = format!("{}/api/v1/jobs", self.base_url);
 
         if let Some(s) = status {
-            url = format!("{}?status={}", url, s);
+            url = format!("{url}?status={s}");
         }
 
         let request = self.client.get(&url);
@@ -210,7 +210,7 @@ impl AlloyClient {
 
         if !response.status().is_success() {
             let error = response.text().await?;
-            anyhow::bail!("Failed to list jobs: {}", error);
+            anyhow::bail!("Failed to list jobs: {error}");
         }
 
         Ok(response.json().await?)
@@ -226,7 +226,7 @@ impl AlloyClient {
 
         if !response.status().is_success() {
             let error = response.text().await?;
-            anyhow::bail!("Failed to retry job: {}", error);
+            anyhow::bail!("Failed to retry job: {error}");
         }
 
         #[derive(serde::Deserialize)]

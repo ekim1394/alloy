@@ -53,7 +53,7 @@ pub async fn create_job(
 
     // Store in Supabase
     match state.supabase.create_job(&job).await {
-        Ok(_) => {
+        Ok(()) => {
             // Create a log stream for this job
             state.create_log_stream(job.id).await;
 
@@ -116,9 +116,7 @@ pub async fn request_upload(
     // Same commit = same archive file in storage
     let storage_key = request
         .commit_sha
-        .as_ref()
-        .map(|sha| format!("sources/{}.zip", sha))
-        .unwrap_or_else(|| format!("sources/{}.zip", job_id));
+        .as_ref().map_or_else(|| format!("sources/{job_id}.zip"), |sha| format!("sources/{sha}.zip"));
 
     // Check if archive already exists (enables skip_upload for deduplication)
     let archive_exists = if request.commit_sha.is_some() {
@@ -166,7 +164,7 @@ pub async fn request_upload(
     job.id = job_id;
 
     match state.supabase.create_job(&job).await {
-        Ok(_) => {
+        Ok(()) => {
             tracing::info!(job_id = %job.id, "Created upload job, awaiting file upload");
 
             Ok((
@@ -190,7 +188,7 @@ pub async fn request_upload(
     }
 }
 
-/// POST /api/v1/jobs/:job_id/start - Start a job after upload is complete
+/// POST /`api/v1/jobs/:job_id/start` - Start a job after upload is complete
 pub async fn start_job(
     State(state): State<AppState>,
     Path(job_id): Path<Uuid>,
@@ -238,7 +236,7 @@ pub async fn start_job(
         Ok(None) => Err((
             StatusCode::NOT_FOUND,
             Json(ApiError::new(
-                format!("Job {} not found", job_id),
+                format!("Job {job_id} not found"),
                 "job_not_found",
             )),
         )),
@@ -284,7 +282,7 @@ pub async fn list_jobs(
     }
 }
 
-/// GET /api/v1/jobs/:job_id - Get job status
+/// GET /`api/v1/jobs/:job_id` - Get job status
 pub async fn get_job(
     State(state): State<AppState>,
     Path(job_id): Path<Uuid>,
@@ -294,7 +292,7 @@ pub async fn get_job(
         Ok(None) => Err((
             StatusCode::NOT_FOUND,
             Json(ApiError::new(
-                format!("Job {} not found", job_id),
+                format!("Job {job_id} not found"),
                 "job_not_found",
             )),
         )),
@@ -308,7 +306,7 @@ pub async fn get_job(
     }
 }
 
-/// GET /api/v1/jobs/:job_id/artifacts - Get job artifacts
+/// GET /`api/v1/jobs/:job_id/artifacts` - Get job artifacts
 pub async fn get_artifacts(
     State(state): State<AppState>,
     Path(job_id): Path<Uuid>,
@@ -325,7 +323,7 @@ pub async fn get_artifacts(
     }
 }
 
-/// PUT /api/v1/jobs/:job_id/upload - Upload source archive (proxied to Supabase Storage)
+/// PUT /`api/v1/jobs/:job_id/upload` - Upload source archive (proxied to Supabase Storage)
 pub async fn upload_archive(
     State(state): State<AppState>,
     Path(job_id): Path<Uuid>,
@@ -362,7 +360,7 @@ pub async fn upload_archive(
     let upload_path = source_url
         .split("/object/public/")
         .nth(1)
-        .unwrap_or(&format!("sources/{}.zip", job_id))
+        .unwrap_or(&format!("sources/{job_id}.zip"))
         .to_string();
 
     // Proxy upload to Supabase Storage
@@ -404,7 +402,7 @@ pub async fn upload_archive(
     Ok(StatusCode::OK)
 }
 
-/// POST /api/v1/jobs/:job_id/artifacts/:filename - Upload a build artifact
+/// POST /`api/v1/jobs/:job_id/artifacts/:filename` - Upload a build artifact
 pub async fn upload_artifact(
     State(state): State<AppState>,
     Path((job_id, filename)): Path<(Uuid, String)>,
@@ -443,7 +441,7 @@ pub async fn upload_artifact(
     }
 }
 
-/// POST /api/v1/jobs/:job_id/cancel - Cancel a running job
+/// POST /`api/v1/jobs/:job_id/cancel` - Cancel a running job
 pub async fn cancel_job(
     State(state): State<AppState>,
     Path(job_id): Path<Uuid>,
@@ -468,7 +466,7 @@ pub async fn cancel_job(
                 .update_job_status(job_id, JobStatus::Cancelled)
                 .await
             {
-                Ok(_) => {
+                Ok(()) => {
                     tracing::info!(job_id = %job_id, "Job cancelled");
                     Ok(StatusCode::OK)
                 },
@@ -484,7 +482,7 @@ pub async fn cancel_job(
         Ok(None) => Err((
             StatusCode::NOT_FOUND,
             Json(ApiError::new(
-                format!("Job {} not found", job_id),
+                format!("Job {job_id} not found"),
                 "job_not_found",
             )),
         )),
@@ -505,7 +503,7 @@ pub struct RetryJobResponse {
     pub original_job_id: Uuid,
 }
 
-/// POST /api/v1/jobs/:job_id/retry - Retry a failed or cancelled job
+/// POST /`api/v1/jobs/:job_id/retry` - Retry a failed or cancelled job
 pub async fn retry_job(
     State(state): State<AppState>,
     Path(job_id): Path<Uuid>,
@@ -532,14 +530,14 @@ pub async fn retry_job(
                 Job::with_script(
                     original.customer_id,
                     script.clone(),
-                    original.source_type.clone(),
+                    original.source_type,
                     original.source_url.clone(),
                 )
             } else if let Some(ref command) = original.command {
                 Job::with_command(
                     original.customer_id,
                     command.clone(),
-                    original.source_type.clone(),
+                    original.source_type,
                     original.source_url.clone(),
                 )
             } else {
@@ -556,7 +554,7 @@ pub async fn retry_job(
             new_job.status = JobStatus::Pending;
 
             match state.supabase.create_job(&new_job).await {
-                Ok(_) => {
+                Ok(()) => {
                     tracing::info!(new_job_id = %new_job.id, original_job_id = %job_id, "Job retried");
                     Ok((
                         StatusCode::CREATED,
@@ -578,7 +576,7 @@ pub async fn retry_job(
         Ok(None) => Err((
             StatusCode::NOT_FOUND,
             Json(ApiError::new(
-                format!("Job {} not found", job_id),
+                format!("Job {job_id} not found"),
                 "job_not_found",
             )),
         )),

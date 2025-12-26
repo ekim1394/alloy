@@ -26,7 +26,7 @@ pub struct JobExecutor {
 }
 
 impl JobExecutor {
-    pub fn new(
+    pub const fn new(
         worker_id: Uuid,
         client: OrchestratorClient,
         config: Config,
@@ -61,15 +61,12 @@ impl JobExecutor {
             tracing::warn!(job_id = %job.id, "Failed to release VM to pool: {}", e);
         }
 
-        match result {
-            Ok(inner_result) => inner_result,
-            Err(_) => {
-                tracing::error!(job_id = %job.id, timeout_minutes = self.config.job_timeout_minutes, "Job timed out");
-                anyhow::bail!(
-                    "Job timed out after {} minutes",
-                    self.config.job_timeout_minutes
-                )
-            },
+        if let Ok(inner_result) = result { inner_result } else {
+            tracing::error!(job_id = %job.id, timeout_minutes = self.config.job_timeout_minutes, "Job timed out");
+            anyhow::bail!(
+                "Job timed out after {} minutes",
+                self.config.job_timeout_minutes
+            )
         }
     }
 
@@ -130,15 +127,13 @@ impl JobExecutor {
             SourceType::Git => {
                 // Clone git repository
                 format!(
-                    "cd ~ && git clone --depth 1 '{}' workspace && cd workspace",
-                    source_url
+                    "cd ~ && git clone --depth 1 '{source_url}' workspace && cd workspace"
                 )
             },
             SourceType::Upload => {
                 // Download and extract archive
                 format!(
-                    "cd ~ && curl -sL '{}' -o source.zip && unzip -q source.zip -d workspace && cd workspace",
-                    source_url
+                    "cd ~ && curl -sL '{source_url}' -o source.zip && unzip -q source.zip -d workspace && cd workspace"
                 )
             },
         };
@@ -155,7 +150,7 @@ impl JobExecutor {
                 "UserKnownHostsFile=/dev/null",
                 "-o",
                 "PubkeyAuthentication=no",
-                &format!("{}@{}", VM_USER, vm_ip),
+                &format!("{VM_USER}@{vm_ip}"),
                 &fetch_cmd,
             ])
             .output()
@@ -163,7 +158,7 @@ impl JobExecutor {
 
         if !output.status.success() {
             let stderr = String::from_utf8_lossy(&output.stderr);
-            anyhow::bail!("Failed to fetch source: {}", stderr);
+            anyhow::bail!("Failed to fetch source: {stderr}");
         }
 
         Ok(())
@@ -226,12 +221,11 @@ impl JobExecutor {
         let run_cmd = if job.script.is_some() {
             // Write script to file and execute
             format!(
-                "cat > /tmp/build_script.sh << 'SCRIPT_EOF'\n{}\nSCRIPT_EOF\nchmod +x /tmp/build_script.sh && cd ~/workspace && /tmp/build_script.sh",
-                executable
+                "cat > /tmp/build_script.sh << 'SCRIPT_EOF'\n{executable}\nSCRIPT_EOF\nchmod +x /tmp/build_script.sh && cd ~/workspace && /tmp/build_script.sh"
             )
         } else {
             // Single command, run in workspace
-            format!("cd ~/workspace && {}", executable)
+            format!("cd ~/workspace && {executable}")
         };
 
         let mut cmd = Command::new("sshpass");
@@ -246,7 +240,7 @@ impl JobExecutor {
             "UserKnownHostsFile=/dev/null",
             "-o",
             "PubkeyAuthentication=no",
-            &format!("{}@{}", VM_USER, vm_ip),
+            &format!("{VM_USER}@{vm_ip}"),
             &run_cmd,
         ])
         .stdout(Stdio::piped())
@@ -269,7 +263,7 @@ impl JobExecutor {
                     // Write to file
                     {
                         let mut w = writer.lock().await;
-                        let file_entry = format!("[stdout] {}\n", line);
+                        let file_entry = format!("[stdout] {line}\n");
                         let _ = w.write_all(file_entry.as_bytes()).await;
                     }
 
@@ -300,7 +294,7 @@ impl JobExecutor {
                     // Write to file
                     {
                         let mut w = writer.lock().await;
-                        let file_entry = format!("[stderr] {}\n", line);
+                        let file_entry = format!("[stderr] {line}\n");
                         let _ = w.write_all(file_entry.as_bytes()).await;
                     }
 
@@ -346,8 +340,8 @@ impl JobExecutor {
                     "StrictHostKeyChecking=no",
                     "-o",
                     "UserKnownHostsFile=/dev/null",
-                    &format!("{}@{}", VM_USER, vm_ip),
-                    &format!("ls -la {} 2>/dev/null || true", pattern),
+                    &format!("{VM_USER}@{vm_ip}"),
+                    &format!("ls -la {pattern} 2>/dev/null || true"),
                 ])
                 .output()
                 .await?;
@@ -406,11 +400,11 @@ impl JobExecutor {
             .chars()
             .any(|c| !c.is_alphanumeric() && c != '.' && c != '-' && c != '_')
         {
-            anyhow::bail!("Invalid filename: {}", filename);
+            anyhow::bail!("Invalid filename: {filename}");
         }
 
         // Find where the file is using `find` inside the VM
-        let find_cmd = format!("find ~ -name '{}' -type f | head -n 1", filename);
+        let find_cmd = format!("find ~ -name '{filename}' -type f | head -n 1");
         let output = Command::new("sshpass")
             .args([
                 "-p",
@@ -420,7 +414,7 @@ impl JobExecutor {
                 "StrictHostKeyChecking=no",
                 "-o",
                 "UserKnownHostsFile=/dev/null",
-                &format!("{}@{}", VM_USER, vm_ip),
+                &format!("{VM_USER}@{vm_ip}"),
                 &find_cmd,
             ])
             .output()
@@ -442,7 +436,7 @@ impl JobExecutor {
                 "StrictHostKeyChecking=no",
                 "-o",
                 "UserKnownHostsFile=/dev/null",
-                &format!("{}@{}:{}", VM_USER, vm_ip, full_path),
+                &format!("{VM_USER}@{vm_ip}:{full_path}"),
                 temp_path.to_str().unwrap(),
             ])
             .output()
@@ -508,7 +502,7 @@ fn parse_ls_line(line: &str, pattern: &str) -> Option<Artifact> {
     };
 
     Some(Artifact {
-        name: name.to_string(),
+        name: (*name).to_string(),
         path: pattern.to_string(),
         size_bytes,
         download_url: None,

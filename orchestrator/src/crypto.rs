@@ -15,7 +15,7 @@ pub fn hash_password(password: &str) -> Result<String, argon2::password_hash::Er
 }
 
 /// Verify a password against an Argon2 hash
-/// The hash should be in PHC string format (as produced by hash_password)
+/// The hash should be in PHC string format (as produced by `hash_password`)
 pub fn verify_password(password: &str, hash: &str) -> bool {
     let parsed_hash = match PasswordHash::new(hash) {
         Ok(h) => h,

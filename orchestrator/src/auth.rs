@@ -49,7 +49,7 @@ pub struct ApiKeyRecord {
     pub last_used_at: Option<chrono::DateTime<chrono::Utc>>,
 }
 
-/// Extractor implementation for AuthUser
+/// Extractor implementation for `AuthUser`
 #[async_trait]
 impl<S> FromRequestParts<S> for AuthUser
 where
@@ -88,7 +88,7 @@ where
 }
 
 /// Authentication middleware
-/// Note: This is now largely redundant if handlers use AuthUser extractor,
+/// Note: This is now largely redundant if handlers use `AuthUser` extractor,
 /// but kept for handlers that need auth but don't need the user object,
 /// or for routes that still rely on Extension<AuthUser>
 pub async fn auth_middleware(
@@ -139,7 +139,7 @@ async fn verify_jwt(
         .client
         .get(format!("{}/auth/v1/user", state.config.supabase_url))
         .header("apikey", &state.config.supabase_key)
-        .header("Authorization", format!("Bearer {}", token))
+        .header("Authorization", format!("Bearer {token}"))
         .send()
         .await
         .map_err(|e| {
@@ -223,7 +223,7 @@ pub fn hash_api_key(key: &str) -> String {
 
 /// Generate a new API key (returns the raw key - only shown once)
 pub fn generate_api_key() -> (String, String) {
-    let raw_key = format!("jmr_{}", Uuid::new_v4().to_string().replace("-", ""));
+    let raw_key = format!("jmr_{}", Uuid::new_v4().to_string().replace('-', ""));
     let hash = hash_api_key(&raw_key);
     (raw_key, hash)
 }

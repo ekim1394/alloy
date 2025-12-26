@@ -30,7 +30,7 @@ pub async fn execute(client: AlloyClient, job_id: &str) -> Result<()> {
 
     println!("   Status: {:?}", job.status);
     if let Some(ref cmd) = job.command {
-        println!("   Command: {}", cmd);
+        println!("   Command: {cmd}");
     }
     if job.script.is_some() {
         println!("   Script: (inline script)");
@@ -38,21 +38,21 @@ pub async fn execute(client: AlloyClient, job_id: &str) -> Result<()> {
     println!("   Source: {:?}", job.source_type);
 
     if let Some(ref url) = job.source_url {
-        println!("   Source URL: {}", url);
+        println!("   Source URL: {url}");
     }
 
     println!("   Created: {}", job.created_at);
 
     if let Some(started) = job.started_at {
-        println!("   Started: {}", started);
+        println!("   Started: {started}");
     }
 
     if let Some(completed) = job.completed_at {
-        println!("   Completed: {}", completed);
+        println!("   Completed: {completed}");
     }
 
     if let Some(exit_code) = job.exit_code {
-        println!("   Exit code: {}", exit_code);
+        println!("   Exit code: {exit_code}");
     }
 
     if let Some(minutes) = job.build_minutes {

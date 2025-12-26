@@ -6,7 +6,7 @@ use tokio::process::Command;
 use tokio::sync::Mutex;
 
 /// State of a VM in the pool
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum VmState {
     /// VM is ready to accept a job
     Ready,
@@ -41,7 +41,7 @@ impl VmPool {
         let mut vms = Vec::with_capacity(pool_size as usize);
 
         for i in 0..pool_size {
-            let vm_name = format!("pool-vm-{}", i);
+            let vm_name = format!("pool-vm-{i}");
 
             // Clone the VM
             tracing::info!(vm_name = %vm_name, "Cloning VM for pool...");
@@ -54,7 +54,7 @@ impl VmPool {
                 let stderr = String::from_utf8_lossy(&output.stderr);
                 // If VM already exists, that's ok - just use it
                 if !stderr.contains("already exists") {
-                    anyhow::bail!("Failed to clone VM {}: {}", vm_name, stderr);
+                    anyhow::bail!("Failed to clone VM {vm_name}: {stderr}");
                 }
                 tracing::info!(vm_name = %vm_name, "VM already exists, reusing");
             }
@@ -66,12 +66,9 @@ impl VmPool {
                 .spawn()?;
 
             // Wait for VM to boot and get IP
-            let ip = match Self::wait_for_ip(&vm_name).await {
-                Some(ip) => ip,
-                None => {
-                    tracing::warn!(vm_name = %vm_name, "Failed to get VM IP, will retry later");
-                    String::new()
-                },
+            let ip = if let Some(ip) = Self::wait_for_ip(&vm_name).await { ip } else {
+                tracing::warn!(vm_name = %vm_name, "Failed to get VM IP, will retry later");
+                String::new()
             };
 
             // Run setup script if provided
@@ -95,7 +92,7 @@ impl VmPool {
                                 "-o",
                                 "PubkeyAuthentication=no",
                                 script,
-                                &format!("admin@{}:~/setup.sh", ip),
+                                &format!("admin@{ip}:~/setup.sh"),
                             ])
                             .output()
                             .await;
@@ -114,7 +111,7 @@ impl VmPool {
                                         "UserKnownHostsFile=/dev/null",
                                         "-o",
                                         "PubkeyAuthentication=no",
-                                        &format!("admin@{}", ip),
+                                        &format!("admin@{ip}"),
                                         "chmod +x ~/setup.sh && ~/setup.sh",
                                     ])
                                     .output()
@@ -152,7 +149,7 @@ impl VmPool {
                                 "UserKnownHostsFile=/dev/null",
                                 "-o",
                                 "PubkeyAuthentication=no",
-                                &format!("admin@{}", ip),
+                                &format!("admin@{ip}"),
                                 script,
                             ])
                             .output()

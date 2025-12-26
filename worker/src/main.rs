@@ -77,10 +77,10 @@ async fn main() -> anyhow::Result<()> {
         let terminate = std::future::pending::<()>();
 
         tokio::select! {
-            _ = ctrl_c => {
+            () = ctrl_c => {
                 tracing::info!("Received Ctrl+C, initiating graceful shutdown...");
             }
-            _ = terminate => {
+            () = terminate => {
                 tracing::info!("Received SIGTERM, initiating graceful shutdown...");
             }
         }
@@ -143,7 +143,7 @@ async fn main() -> anyhow::Result<()> {
                         tracing::error!(job_id = %job.id, "Job execution failed: {}", e);
 
                         // Report failure to orchestrator so job isn't stuck
-                        let error_msg = format!("Job execution failed on worker: {}", e);
+                        let error_msg = format!("Job execution failed on worker: {e}");
 
                         // 1. Push error log
                         let log_entry = LogEntry {

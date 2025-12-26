@@ -19,7 +19,7 @@ pub struct AppState {
     pub client: reqwest::Client,
     /// In-memory cache of active workers (complement to DB)
     pub workers: Arc<RwLock<HashMap<Uuid, WorkerInfo>>>,
-    /// Active log streams (job_id -> broadcast sender)
+    /// Active log streams (`job_id` -> broadcast sender)
     pub log_streams: Arc<RwLock<HashMap<Uuid, tokio::sync::broadcast::Sender<String>>>>,
 }
 

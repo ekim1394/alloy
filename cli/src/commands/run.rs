@@ -26,7 +26,7 @@ pub async fn execute(
     // Read script file if provided
     let script = if let Some(ref path) = script_path {
         let script_content = std::fs::read_to_string(Path::new(path))
-            .map_err(|e| anyhow::anyhow!("Failed to read script file '{}': {}", path, e))?;
+            .map_err(|e| anyhow::anyhow!("Failed to read script file '{path}': {e}"))?;
         Some(script_content)
     } else {
         None
@@ -34,16 +34,16 @@ pub async fn execute(
 
     println!("🚀 Submitting job to Alloy API...");
     if let Some(ref cmd) = command {
-        println!("   Command: {}", cmd);
+        println!("   Command: {cmd}");
     }
     if let Some(ref path) = script_path {
-        println!("   Script: {}", path);
+        println!("   Script: {path}");
     }
 
     let response = if let Some(ref repo_url) = repo {
         // Git-based job
         println!("   Source: Git repository");
-        println!("   URL: {}", repo_url);
+        println!("   URL: {repo_url}");
         println!();
 
         client
@@ -59,14 +59,14 @@ pub async fn execute(
         // Get git commit SHA for deduplication
         let commit_sha = archive::get_commit_sha(&cwd).ok();
         if let Some(ref sha) = commit_sha {
-            println!("   Commit: {}", sha);
+            println!("   Commit: {sha}");
         }
 
         // Create archive
         print!("📦 Creating archive...");
         stdout().flush().ok();
         let archive_data = archive::create_archive(&cwd)?;
-        println!(" {} ({})", "✓", archive::format_size(archive_data.len()));
+        println!(" ✓ ({})", archive::format_size(archive_data.len()));
 
         // Request upload URL
         print!("📤 Requesting upload URL...");
@@ -141,10 +141,10 @@ pub async fn execute(
                             .and_then(|s| s.as_str())
                             .unwrap_or("Unknown");
                         let exit_code =
-                            json.get("exit_code").and_then(|e| e.as_i64()).unwrap_or(-1);
+                            json.get("exit_code").and_then(serde_json::Value::as_i64).unwrap_or(-1);
                         let build_minutes = json
                             .get("build_minutes")
-                            .and_then(|m| m.as_f64())
+                            .and_then(serde_json::Value::as_f64)
                             .unwrap_or(0.0);
 
                         println!("\n{}", "─".repeat(60));
@@ -157,8 +157,7 @@ pub async fn execute(
                             stdout(),
                             SetForegroundColor(color),
                             Print(format!(
-                                "\n{} Job {} with exit code {}\n",
-                                icon, status, exit_code
+                                "\n{icon} Job {status} with exit code {exit_code}\n"
                             )),
                             ResetColor
                         )?;
@@ -168,7 +167,7 @@ pub async fn execute(
                         execute!(
                             stdout(),
                             SetForegroundColor(Color::Red),
-                            Print(format!("Error: {}\n", err)),
+                            Print(format!("Error: {err}\n")),
                             ResetColor
                         )?;
                     }
@@ -178,7 +177,7 @@ pub async fn execute(
                 break;
             },
             Err(e) => {
-                eprintln!("WebSocket error: {}", e);
+                eprintln!("WebSocket error: {e}");
                 break;
             },
             _ => {},
@@ -208,7 +207,7 @@ pub async fn execute(
     )?;
 
     if let Some(exit_code) = job.exit_code {
-        println!("   Exit code: {}", exit_code);
+        println!("   Exit code: {exit_code}");
     }
     if let Some(minutes) = job.build_minutes {
         println!("   Build time: {}", super::format_build_time(minutes));

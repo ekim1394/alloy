@@ -16,7 +16,7 @@ use axum::extract::DefaultBodyLimit;
 use axum::http::{HeaderValue, Method};
 use axum::Router;
 use std::net::SocketAddr;
-use tower_http::cors::{Any, CorsLayer};
+use tower_http::cors::CorsLayer;
 use tower_http::trace::TraceLayer;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
@@ -24,7 +24,7 @@ use crate::config::Config;
 use crate::state::AppState;
 
 /// Build CORS layer based on environment
-/// - If CORS_ORIGINS is set, allow only those origins
+/// - If `CORS_ORIGINS` is set, allow only those origins
 /// - Otherwise, use permissive mode (for local development)
 fn build_cors_layer() -> CorsLayer {
     if let Ok(origins) = std::env::var("CORS_ORIGINS") {

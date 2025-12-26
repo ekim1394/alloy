@@ -15,7 +15,7 @@ use uuid::Uuid;
 use crate::state::AppState;
 use shared::{ApiError, LogEntry};
 
-/// GET /api/v1/jobs/:job_id/logs - Stream logs via WebSocket
+/// GET /`api/v1/jobs/:job_id/logs` - Stream logs via WebSocket
 pub async fn stream_logs(
     ws: WebSocketUpgrade,
     State(state): State<AppState>,
@@ -28,20 +28,17 @@ async fn handle_log_stream(socket: WebSocket, state: AppState, job_id: Uuid) {
     let (mut sender, mut receiver) = socket.split();
 
     // Get or wait for the log stream for this job
-    let log_tx = match state.get_log_stream(job_id).await {
-        Some(tx) => tx,
-        None => {
-            // Job might not exist or already completed
-            let _ = sender
-                .send(Message::Text(
-                    serde_json::to_string(&serde_json::json!({
-                        "error": "Job not found or already completed"
-                    }))
-                    .unwrap(),
-                ))
-                .await;
-            return;
-        },
+    let log_tx = if let Some(tx) = state.get_log_stream(job_id).await { tx } else {
+        // Job might not exist or already completed
+        let _ = sender
+            .send(Message::Text(
+                serde_json::to_string(&serde_json::json!({
+                    "error": "Job not found or already completed"
+                }))
+                .unwrap(),
+            ))
+            .await;
+        return;
     };
 
     let mut log_rx = log_tx.subscribe();
@@ -67,7 +64,7 @@ async fn handle_log_stream(socket: WebSocket, state: AppState, job_id: Uuid) {
     send_task.abort();
 }
 
-/// POST /api/v1/workers/:worker_id/log - Push log entry from worker
+/// POST /`api/v1/workers/:worker_id/log` - Push log entry from worker
 pub async fn push_log(
     State(state): State<AppState>,
     Json(entry): Json<LogEntry>,
@@ -82,7 +79,7 @@ pub async fn push_log(
     }
 }
 
-/// GET /api/v1/jobs/:job_id/logs/stored - Get stored logs for a job
+/// GET /`api/v1/jobs/:job_id/logs/stored` - Get stored logs for a job
 pub async fn get_stored_logs(
     State(state): State<AppState>,
     Path(job_id): Path<Uuid>,
@@ -124,14 +121,14 @@ pub async fn get_stored_logs(
     }
 }
 
-/// POST /api/v1/jobs/:job_id/logs/upload - Upload complete log file
+/// POST /`api/v1/jobs/:job_id/logs/upload` - Upload complete log file
 pub async fn upload_logs(
     State(state): State<AppState>,
     Path(job_id): Path<Uuid>,
     body: axum::body::Bytes,
 ) -> Result<StatusCode, (StatusCode, Json<ApiError>)> {
     match state.supabase.upload_log_file(job_id, body.to_vec()).await {
-        Ok(_) => Ok(StatusCode::OK),
+        Ok(()) => Ok(StatusCode::OK),
         Err(e) => {
             tracing::error!("Failed to upload log file: {}", e);
             Err((

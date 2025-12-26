@@ -18,8 +18,8 @@ pub enum SourceType {
 impl std::fmt::Display for SourceType {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            SourceType::Git => write!(f, "git"),
-            SourceType::Upload => write!(f, "upload"),
+            Self::Git => write!(f, "git"),
+            Self::Upload => write!(f, "upload"),
         }
     }
 }
@@ -48,6 +48,7 @@ pub struct Job {
 
 impl Job {
     /// Create a new job with a command
+    #[must_use] 
     pub fn with_command(
         customer_id: Uuid,
         command: String,
@@ -72,6 +73,7 @@ impl Job {
     }
 
     /// Create a new job with a script
+    #[must_use] 
     pub fn with_script(
         customer_id: Uuid,
         script: String,
@@ -96,6 +98,7 @@ impl Job {
     }
 
     /// Get the executable content (command or script)
+    #[must_use] 
     pub fn executable(&self) -> Option<&str> {
         self.command.as_deref().or(self.script.as_deref())
     }
@@ -115,11 +118,11 @@ pub enum JobStatus {
 impl std::fmt::Display for JobStatus {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            JobStatus::Pending => write!(f, "pending"),
-            JobStatus::Running => write!(f, "running"),
-            JobStatus::Completed => write!(f, "completed"),
-            JobStatus::Failed => write!(f, "failed"),
-            JobStatus::Cancelled => write!(f, "cancelled"),
+            Self::Pending => write!(f, "pending"),
+            Self::Running => write!(f, "running"),
+            Self::Completed => write!(f, "completed"),
+            Self::Failed => write!(f, "failed"),
+            Self::Cancelled => write!(f, "cancelled"),
         }
     }
 }
@@ -270,28 +273,32 @@ pub enum SubscriptionPlan {
 
 impl SubscriptionPlan {
     /// Monthly included minutes for this plan
-    pub fn included_minutes(&self) -> Option<u32> {
+    #[must_use] 
+    pub const fn included_minutes(&self) -> Option<u32> {
         match self {
-            SubscriptionPlan::Pro => Some(300),
-            SubscriptionPlan::Team => None, // Unlimited
+            Self::Pro => Some(300),
+            Self::Team => None, // Unlimited
         }
     }
 
     /// Monthly price in cents
-    pub fn price_cents(&self) -> u32 {
+    #[must_use] 
+    pub const fn price_cents(&self) -> u32 {
         match self {
-            SubscriptionPlan::Pro => 2000,   // $20
-            SubscriptionPlan::Team => 20000, // $200
+            Self::Pro => 2000,   // $20
+            Self::Team => 20000, // $200
         }
     }
 
     /// Whether this plan supports metered billing for overages
-    pub fn has_metered_billing(&self) -> bool {
-        matches!(self, SubscriptionPlan::Pro)
+    #[must_use] 
+    pub const fn has_metered_billing(&self) -> bool {
+        matches!(self, Self::Pro)
     }
 
     /// Trial duration in days
-    pub fn trial_days(&self) -> u32 {
+    #[must_use] 
+    pub const fn trial_days(&self) -> u32 {
         7
     }
 }
@@ -299,8 +306,8 @@ impl SubscriptionPlan {
 impl std::fmt::Display for SubscriptionPlan {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            SubscriptionPlan::Pro => write!(f, "pro"),
-            SubscriptionPlan::Team => write!(f, "team"),
+            Self::Pro => write!(f, "pro"),
+            Self::Team => write!(f, "team"),
         }
     }
 }
@@ -310,9 +317,9 @@ impl std::str::FromStr for SubscriptionPlan {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s.to_lowercase().as_str() {
-            "pro" => Ok(SubscriptionPlan::Pro),
-            "team" => Ok(SubscriptionPlan::Team),
-            _ => Err(format!("Unknown plan: {}", s)),
+            "pro" => Ok(Self::Pro),
+            "team" => Ok(Self::Team),
+            _ => Err(format!("Unknown plan: {s}")),
         }
     }
 }
@@ -331,10 +338,10 @@ pub enum SubscriptionStatus {
 impl std::fmt::Display for SubscriptionStatus {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            SubscriptionStatus::Active => write!(f, "active"),
-            SubscriptionStatus::PastDue => write!(f, "past_due"),
-            SubscriptionStatus::Canceled => write!(f, "canceled"),
-            SubscriptionStatus::Trialing => write!(f, "trialing"),
+            Self::Active => write!(f, "active"),
+            Self::PastDue => write!(f, "past_due"),
+            Self::Canceled => write!(f, "canceled"),
+            Self::Trialing => write!(f, "trialing"),
         }
     }
 }
@@ -362,6 +369,7 @@ pub struct Subscription {
 
 impl Subscription {
     /// Create a new trial subscription for a user (7-day Pro trial)
+    #[must_use] 
     pub fn new_trial(user_id: Uuid) -> Self {
         let now = Utc::now();
         let trial_end = now + chrono::Duration::days(7);
@@ -383,6 +391,7 @@ impl Subscription {
     }
 
     /// Check if currently in trial period
+    #[must_use] 
     pub fn is_trial_active(&self) -> bool {
         if self.status != SubscriptionStatus::Trialing {
             return false;
@@ -394,6 +403,7 @@ impl Subscription {
     }
 
     /// Check if trial has expired
+    #[must_use] 
     pub fn is_trial_expired(&self) -> bool {
         if self.status != SubscriptionStatus::Trialing {
             return false;
@@ -405,6 +415,7 @@ impl Subscription {
     }
 
     /// Check if the user can run a job
+    #[must_use] 
     pub fn can_run_job(&self) -> bool {
         // Trial expired users cannot run jobs
         if self.is_trial_expired() {
@@ -418,17 +429,19 @@ impl Subscription {
     }
 
     /// Get remaining minutes (None for unlimited plans)
+    #[must_use] 
     pub fn remaining_minutes(&self) -> Option<f64> {
         match self.plan {
             SubscriptionPlan::Team => None,
             SubscriptionPlan::Pro => {
-                let included = self.minutes_included.unwrap_or(300) as f64;
+                let included = f64::from(self.minutes_included.unwrap_or(300));
                 Some((included - self.minutes_used).max(0.0))
             },
         }
     }
 
     /// Days remaining in trial (None if not on trial)
+    #[must_use] 
     pub fn trial_days_remaining(&self) -> Option<i64> {
         if self.status != SubscriptionStatus::Trialing {
             return None;
