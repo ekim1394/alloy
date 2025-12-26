@@ -165,13 +165,12 @@ async fn verify_api_key(state: &AppState, key: &str) -> Result<AuthUser, (Status
 
 /// Hash an API key for storage/comparison
 fn hash_api_key(key: &str) -> String {
-    use std::collections::hash_map::DefaultHasher;
-    use std::hash::{Hash, Hasher};
+    use sha2::{Digest, Sha256};
     
-    // In production, use a proper cryptographic hash like SHA-256
-    let mut hasher = DefaultHasher::new();
-    key.hash(&mut hasher);
-    format!("{:x}", hasher.finish())
+    // Use SHA-256 for secure API key hashing
+    let mut hasher = Sha256::new();
+    hasher.update(key.as_bytes());
+    format!("{:x}", hasher.finalize())
 }
 
 /// Generate a new API key (returns the raw key - only shown once)
@@ -253,4 +252,23 @@ fn constant_time_compare(a: &str, b: &str) -> bool {
         result |= x ^ y;
     }
     result == 0
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_hash_api_key() {
+        let key = "test_key_123";
+        let hash = hash_api_key(key);
+
+        // SHA-256 hash is 64 hex characters
+        assert_eq!(hash.len(), 64);
+
+        // Verify deterministic output
+        // echo -n "test_key_123" | shasum -a 256
+        let expected = "1f8e8c97805e4ad56c611029fbba4c04dab40bf05d18c46655696357705cc136";
+        assert_eq!(hash, expected);
+    }
 }
