@@ -246,6 +246,15 @@ input:focus, textarea:focus {
   50% { opacity: 0.8; transform: scale(1.05); }
 }
 
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.animate-spin {
+  animation: spin 1s linear infinite;
+  display: inline-block;
+}
+
 .hero-subtitle {
   font-size: 1.5rem;
   color: var(--text-secondary);

@@ -7,6 +7,7 @@ function Dashboard() {
   const { 
     data: jobs = [], 
     isLoading, 
+    isRefetching,
     refetch 
   } = useQuery<Job[]>({
     queryKey: ['jobs'],
@@ -31,8 +32,14 @@ function Dashboard() {
     <div className="dashboard">
       <div className="page-header">
         <h1>Jobs</h1>
-        <button className="btn" onClick={() => refetch()}>
-          ↻ Refresh
+        <button
+          className="btn"
+          onClick={() => refetch()}
+          disabled={isLoading || isRefetching}
+          aria-label="Refresh jobs list"
+        >
+          <span className={isRefetching ? "animate-spin" : ""}>↻</span>
+          {isRefetching ? "Refreshing..." : "Refresh"}
         </button>
       </div>
 
