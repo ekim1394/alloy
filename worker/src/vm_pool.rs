@@ -66,7 +66,9 @@ impl VmPool {
                 .spawn()?;
 
             // Wait for VM to boot and get IP
-            let ip = if let Some(ip) = Self::wait_for_ip(&vm_name).await { ip } else {
+            let ip = if let Some(ip) = Self::wait_for_ip(&vm_name).await {
+                ip
+            } else {
                 tracing::warn!(vm_name = %vm_name, "Failed to get VM IP, will retry later");
                 String::new()
             };

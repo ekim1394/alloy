@@ -48,7 +48,7 @@ pub struct Job {
 
 impl Job {
     /// Create a new job with a command
-    #[must_use] 
+    #[must_use]
     pub fn with_command(
         customer_id: Uuid,
         command: String,
@@ -73,7 +73,7 @@ impl Job {
     }
 
     /// Create a new job with a script
-    #[must_use] 
+    #[must_use]
     pub fn with_script(
         customer_id: Uuid,
         script: String,
@@ -98,7 +98,7 @@ impl Job {
     }
 
     /// Get the executable content (command or script)
-    #[must_use] 
+    #[must_use]
     pub fn executable(&self) -> Option<&str> {
         self.command.as_deref().or(self.script.as_deref())
     }
@@ -273,7 +273,7 @@ pub enum SubscriptionPlan {
 
 impl SubscriptionPlan {
     /// Monthly included minutes for this plan
-    #[must_use] 
+    #[must_use]
     pub const fn included_minutes(&self) -> Option<u32> {
         match self {
             Self::Pro => Some(300),
@@ -282,7 +282,7 @@ impl SubscriptionPlan {
     }
 
     /// Monthly price in cents
-    #[must_use] 
+    #[must_use]
     pub const fn price_cents(&self) -> u32 {
         match self {
             Self::Pro => 2000,   // $20
@@ -291,13 +291,13 @@ impl SubscriptionPlan {
     }
 
     /// Whether this plan supports metered billing for overages
-    #[must_use] 
+    #[must_use]
     pub const fn has_metered_billing(&self) -> bool {
         matches!(self, Self::Pro)
     }
 
     /// Trial duration in days
-    #[must_use] 
+    #[must_use]
     pub const fn trial_days(&self) -> u32 {
         7
     }
@@ -369,7 +369,7 @@ pub struct Subscription {
 
 impl Subscription {
     /// Create a new trial subscription for a user (7-day Pro trial)
-    #[must_use] 
+    #[must_use]
     pub fn new_trial(user_id: Uuid) -> Self {
         let now = Utc::now();
         let trial_end = now + chrono::Duration::days(7);
@@ -391,7 +391,7 @@ impl Subscription {
     }
 
     /// Check if currently in trial period
-    #[must_use] 
+    #[must_use]
     pub fn is_trial_active(&self) -> bool {
         if self.status != SubscriptionStatus::Trialing {
             return false;
@@ -403,7 +403,7 @@ impl Subscription {
     }
 
     /// Check if trial has expired
-    #[must_use] 
+    #[must_use]
     pub fn is_trial_expired(&self) -> bool {
         if self.status != SubscriptionStatus::Trialing {
             return false;
@@ -415,7 +415,7 @@ impl Subscription {
     }
 
     /// Check if the user can run a job
-    #[must_use] 
+    #[must_use]
     pub fn can_run_job(&self) -> bool {
         // Trial expired users cannot run jobs
         if self.is_trial_expired() {
@@ -429,7 +429,7 @@ impl Subscription {
     }
 
     /// Get remaining minutes (None for unlimited plans)
-    #[must_use] 
+    #[must_use]
     pub fn remaining_minutes(&self) -> Option<f64> {
         match self.plan {
             SubscriptionPlan::Team => None,
@@ -441,7 +441,7 @@ impl Subscription {
     }
 
     /// Days remaining in trial (None if not on trial)
-    #[must_use] 
+    #[must_use]
     pub fn trial_days_remaining(&self) -> Option<i64> {
         if self.status != SubscriptionStatus::Trialing {
             return None;

@@ -61,7 +61,9 @@ impl JobExecutor {
             tracing::warn!(job_id = %job.id, "Failed to release VM to pool: {}", e);
         }
 
-        if let Ok(inner_result) = result { inner_result } else {
+        if let Ok(inner_result) = result {
+            inner_result
+        } else {
             tracing::error!(job_id = %job.id, timeout_minutes = self.config.job_timeout_minutes, "Job timed out");
             anyhow::bail!(
                 "Job timed out after {} minutes",
@@ -126,9 +128,7 @@ impl JobExecutor {
         let fetch_cmd = match job.source_type {
             SourceType::Git => {
                 // Clone git repository
-                format!(
-                    "cd ~ && git clone --depth 1 '{source_url}' workspace && cd workspace"
-                )
+                format!("cd ~ && git clone --depth 1 '{source_url}' workspace && cd workspace")
             },
             SourceType::Upload => {
                 // Download and extract archive

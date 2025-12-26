@@ -35,7 +35,10 @@ impl Config {
             orchestrator_url: std::env::var("ORCHESTRATOR_URL")
                 .context("ORCHESTRATOR_URL environment variable required")?,
             hostname: std::env::var("WORKER_HOSTNAME").unwrap_or_else(|_| {
-                hostname::get().map_or_else(|_| "unknown".to_string(), |h| h.to_string_lossy().to_string())
+                hostname::get().map_or_else(
+                    |_| "unknown".to_string(),
+                    |h| h.to_string_lossy().to_string(),
+                )
             }),
             capacity: std::env::var("WORKER_CAPACITY")
                 .unwrap_or_else(|_| "2".to_string())

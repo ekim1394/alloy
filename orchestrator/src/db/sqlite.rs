@@ -404,7 +404,8 @@ impl From<JobRow> for Job {
                 _ => JobStatus::Pending,
             },
             worker_id: row.worker_id.and_then(|s| Uuid::parse_str(&s).ok()),
-            created_at: chrono::DateTime::parse_from_rfc3339(&row.created_at).map_or_else(|_| Utc::now(), |dt| dt.with_timezone(&Utc)),
+            created_at: chrono::DateTime::parse_from_rfc3339(&row.created_at)
+                .map_or_else(|_| Utc::now(), |dt| dt.with_timezone(&Utc)),
             started_at: row.started_at.and_then(|s| {
                 chrono::DateTime::parse_from_rfc3339(&s)
                     .map(|dt| dt.with_timezone(&Utc))
@@ -461,7 +462,8 @@ impl From<ApiKeyRow> for ApiKeyRecord {
             user_id: Uuid::parse_str(&row.user_id).unwrap_or_default(),
             name: row.name,
             key_hash: row.key_hash,
-            created_at: chrono::DateTime::parse_from_rfc3339(&row.created_at).map_or_else(|_| Utc::now(), |dt| dt.with_timezone(&Utc)),
+            created_at: chrono::DateTime::parse_from_rfc3339(&row.created_at)
+                .map_or_else(|_| Utc::now(), |dt| dt.with_timezone(&Utc)),
             last_used_at: row.last_used_at.and_then(|s| {
                 chrono::DateTime::parse_from_rfc3339(&s)
                     .map(|dt| dt.with_timezone(&Utc))
@@ -484,7 +486,8 @@ impl From<ApiKeyInfoRow> for ApiKeyInfo {
         Self {
             id: Uuid::parse_str(&row.id).unwrap_or_default(),
             name: row.name,
-            created_at: chrono::DateTime::parse_from_rfc3339(&row.created_at).map_or_else(|_| Utc::now(), |dt| dt.with_timezone(&Utc)),
+            created_at: chrono::DateTime::parse_from_rfc3339(&row.created_at)
+                .map_or_else(|_| Utc::now(), |dt| dt.with_timezone(&Utc)),
             last_used_at: row.last_used_at.and_then(|s| {
                 chrono::DateTime::parse_from_rfc3339(&s)
                     .map(|dt| dt.with_timezone(&Utc))

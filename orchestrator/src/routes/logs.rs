@@ -28,7 +28,9 @@ async fn handle_log_stream(socket: WebSocket, state: AppState, job_id: Uuid) {
     let (mut sender, mut receiver) = socket.split();
 
     // Get or wait for the log stream for this job
-    let log_tx = if let Some(tx) = state.get_log_stream(job_id).await { tx } else {
+    let log_tx = if let Some(tx) = state.get_log_stream(job_id).await {
+        tx
+    } else {
         // Job might not exist or already completed
         let _ = sender
             .send(Message::Text(

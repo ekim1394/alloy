@@ -140,8 +140,10 @@ pub async fn execute(
                             .get("status")
                             .and_then(|s| s.as_str())
                             .unwrap_or("Unknown");
-                        let exit_code =
-                            json.get("exit_code").and_then(serde_json::Value::as_i64).unwrap_or(-1);
+                        let exit_code = json
+                            .get("exit_code")
+                            .and_then(serde_json::Value::as_i64)
+                            .unwrap_or(-1);
                         let build_minutes = json
                             .get("build_minutes")
                             .and_then(serde_json::Value::as_f64)

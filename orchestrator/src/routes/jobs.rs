@@ -114,9 +114,10 @@ pub async fn request_upload(
 
     // Use commit_sha for storage path if provided (enables deduplication)
     // Same commit = same archive file in storage
-    let storage_key = request
-        .commit_sha
-        .as_ref().map_or_else(|| format!("sources/{job_id}.zip"), |sha| format!("sources/{sha}.zip"));
+    let storage_key = request.commit_sha.as_ref().map_or_else(
+        || format!("sources/{job_id}.zip"),
+        |sha| format!("sources/{sha}.zip"),
+    );
 
     // Check if archive already exists (enables skip_upload for deduplication)
     let archive_exists = if request.commit_sha.is_some() {
