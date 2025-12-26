@@ -48,8 +48,10 @@ export default function BillingSettings() {
 
   if (loading) {
     return (
-      <div className="card">
-        <p>Loading subscription...</p>
+      <div className="card bg-base-100 shadow-sm p-4">
+        <div className="flex justify-center">
+          <span className="loading loading-spinner loading-md"></span>
+        </div>
       </div>
     )
   }
@@ -70,165 +72,156 @@ export default function BillingSettings() {
   return (
     <div>
       {error && (
-        <div className="card" style={{ background: 'var(--error)', marginBottom: '1rem' }}>
-          <p style={{ color: 'white', margin: 0 }}>{error}</p>
+        <div role="alert" className="alert alert-error mb-4">
+          <svg xmlns="http://www.w3.org/2000/svg" className="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+          <span>{error}</span>
         </div>
       )}
 
       {/* Current Plan Card */}
-      <div className="card" style={{ marginBottom: '1.5rem' }}>
-        <h2 style={{ marginTop: 0 }}>Current Plan</h2>
-        
-        {subscription ? (
-          <>
-            <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.5rem', marginBottom: '0.5rem' }}>
-              <span style={{ fontSize: '1.5rem', fontWeight: 'bold', textTransform: 'uppercase' }}>
-                {subscription.plan}
-              </span>
-              <span style={{ 
-                fontSize: '0.75rem', 
-                padding: '0.25rem 0.5rem', 
-                borderRadius: '4px',
-                background: isActive ? 'var(--success)' : isTrialing ? 'var(--warning)' : isPastDue ? 'var(--error)' : 'var(--text-muted)',
-                color: 'white'
-              }}>
-                {subscription.status}
-              </span>
-            </div>
-
-            {isTrialing && (
-              <p style={{ color: 'var(--warning)', margin: '0.5rem 0' }}>
-                ⏱️ Trial ends in {trialDaysLeft} days
-              </p>
-            )}
-
-            {isPastDue && (
-              <p style={{ color: 'var(--error)', margin: '0.5rem 0' }}>
-                ⚠️ Payment past due - please update your payment method
-              </p>
-            )}
-
-            {/* Usage Bar */}
-            {subscription.plan === 'pro' && (
-              <div style={{ marginTop: '1rem' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.25rem' }}>
-                  <span>Usage</span>
-                  <span>{subscription.minutes_used.toFixed(1)} / {subscription.minutes_included} min</span>
+      <div className="card bg-base-100 shadow-sm border border-base-200 mb-8">
+        <div className="card-body">
+          <h2 className="card-title mb-2">Current Plan</h2>
+          
+          {subscription ? (
+            <>
+              <div className="flex items-baseline gap-3 mb-2">
+                <span className="text-2xl font-bold uppercase tracking-wide">
+                  {subscription.plan}
+                </span>
+                <div className={`badge ${isActive ? 'badge-success' : isTrialing ? 'badge-warning' : isPastDue ? 'badge-error' : 'badge-ghost'} text-white`}>
+                  {subscription.status}
                 </div>
-                <div style={{ 
-                  background: 'var(--bg-secondary)', 
-                  borderRadius: '4px', 
-                  height: '8px',
-                  overflow: 'hidden'
-                }}>
-                  <div style={{ 
-                    background: usagePercent > 90 ? 'var(--error)' : usagePercent > 70 ? 'var(--warning)' : 'var(--success)',
-                    width: `${usagePercent}%`,
-                    height: '100%',
-                    transition: 'width 0.3s ease'
-                  }} />
-                </div>
-                {usagePercent >= 100 && (
-                  <p style={{ color: 'var(--warning)', fontSize: '0.85rem', marginTop: '0.5rem' }}>
-                    Overage will be billed automatically via Stripe
-                  </p>
-                )}
               </div>
-            )}
 
-            {subscription.plan === 'team' && (
-              <p style={{ color: 'var(--success)', marginTop: '1rem' }}>
-                ✓ Unlimited minutes included
-              </p>
-            )}
+              {isTrialing && (
+                <div className="text-warning font-medium flex items-center gap-2 my-2">
+                  <span>⏱️</span> Trial ends in {trialDaysLeft} days
+                </div>
+              )}
 
-            {(isActive || isTrialing) && subscription.stripe_customer_id && (
-              <button 
-                className="btn" 
-                onClick={handleManageSubscription}
-                disabled={checkoutLoading !== null}
-                style={{ marginTop: '1rem' }}
-              >
-                {checkoutLoading === 'portal' ? 'Opening...' : 'Manage Subscription'}
-              </button>
-            )}
-          </>
-        ) : (
-          <p>No subscription found. Choose a plan below to get started.</p>
-        )}
+              {isPastDue && (
+                <div className="text-error font-medium flex items-center gap-2 my-2">
+                  <span>⚠️</span> Payment past due - please update your payment method
+                </div>
+              )}
+
+              {/* Usage Bar */}
+              {subscription.plan === 'pro' && (
+                <div className="mt-4">
+                  <div className="flex justify-between text-sm mb-1 font-medium">
+                    <span>Usage</span>
+                    <span>{subscription.minutes_used.toFixed(1)} / {subscription.minutes_included} min</span>
+                  </div>
+                  <progress 
+                    className={`progress w-full ${usagePercent > 90 ? 'progress-error' : usagePercent > 70 ? 'progress-warning' : 'progress-success'}`} 
+                    value={usagePercent} 
+                    max="100"
+                  ></progress>
+                  {usagePercent >= 100 && (
+                    <p className="text-warning text-xs mt-1">
+                      Overage will be billed automatically via Stripe
+                    </p>
+                  )}
+                </div>
+              )}
+
+              {subscription.plan === 'team' && (
+                <p className="text-success mt-4 font-medium flex items-center gap-2">
+                  <span>✓</span> Unlimited minutes included
+                </p>
+              )}
+
+              {(isActive || isTrialing) && subscription.stripe_customer_id && (
+                <div className="card-actions mt-4">
+                  <button 
+                    className="btn btn-outline btn-sm" 
+                    onClick={handleManageSubscription}
+                    disabled={checkoutLoading !== null}
+                  >
+                    {checkoutLoading === 'portal' ? 'Opening...' : 'Manage Subscription'}
+                  </button>
+                </div>
+              )}
+            </>
+          ) : (
+            <p>No subscription found. Choose a plan below to get started.</p>
+          )}
+        </div>
       </div>
 
       {/* Plans */}
-      <h2 style={{ marginTop: '2rem' }}>Available Plans</h2>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1rem' }}>
+      <h2 className="text-2xl font-bold mb-4">Available Plans</h2>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         
         {/* Pro Plan */}
-        <div className="card" style={{ 
-          border: subscription?.plan === 'pro' ? '2px solid var(--primary)' : undefined
-        }}>
-          <h3 style={{ marginTop: 0 }}>Pro</h3>
-          <p style={{ fontSize: '2rem', fontWeight: 'bold', margin: '0.5rem 0' }}>
-            $20<span style={{ fontSize: '1rem', fontWeight: 'normal' }}>/month</span>
-          </p>
-          <ul style={{ paddingLeft: '1.25rem', margin: '1rem 0' }}>
-            <li>300 minutes included</li>
-            <li>Overage billed automatically</li>
-            <li>7-day free trial</li>
-          </ul>
-          {subscription?.plan !== 'pro' && (
-            <button 
-              className="btn btn-primary" 
-              onClick={() => handleUpgrade('pro')}
-              disabled={checkoutLoading !== null}
-              style={{ width: '100%' }}
-            >
-              {checkoutLoading === 'pro' ? 'Loading...' : 'Start Pro Trial'}
-            </button>
-          )}
-          {subscription?.plan === 'pro' && (
-            <p style={{ color: 'var(--primary)', textAlign: 'center', margin: 0 }}>
-              ✓ Current Plan
-            </p>
-          )}
+        <div className={`card bg-base-100 shadow-xl border ${subscription?.plan === 'pro' ? 'border-primary' : 'border-base-200'}`}>
+          <div className="card-body">
+            <h3 className="card-title">Pro</h3>
+            <div className="text-4xl font-bold my-2">
+              $20<span className="text-lg font-normal text-base-content/60">/month</span>
+            </div>
+            <ul className="list-disc list-inside my-4 text-base-content/80 space-y-1">
+              <li>300 minutes included</li>
+              <li>Overage billed automatically</li>
+              <li>7-day free trial</li>
+            </ul>
+            <div className="card-actions justify-end mt-auto">
+              {subscription?.plan !== 'pro' && (
+                <button 
+                  className="btn btn-primary w-full" 
+                  onClick={() => handleUpgrade('pro')}
+                  disabled={checkoutLoading !== null}
+                >
+                  {checkoutLoading === 'pro' ? 'Loading...' : 'Start Pro Trial'}
+                </button>
+              )}
+              {subscription?.plan === 'pro' && (
+                <div className="w-full text-center text-primary font-bold py-2 bg-primary/10 rounded-btn">
+                  ✓ Current Plan
+                </div>
+              )}
+            </div>
+          </div>
         </div>
 
         {/* Team Plan */}
-        <div className="card" style={{ 
-          border: subscription?.plan === 'team' ? '2px solid var(--primary)' : undefined
-        }}>
-          <h3 style={{ marginTop: 0 }}>Team</h3>
-          <p style={{ fontSize: '2rem', fontWeight: 'bold', margin: '0.5rem 0' }}>
-            $200<span style={{ fontSize: '1rem', fontWeight: 'normal' }}>/month</span>
-          </p>
-          <ul style={{ paddingLeft: '1.25rem', margin: '1rem 0' }}>
-            <li>Unlimited minutes</li>
-            <li>Priority support</li>
-            <li>7-day free trial</li>
-          </ul>
-          {subscription?.plan !== 'team' && (
-            <button 
-              className="btn btn-primary" 
-              onClick={() => handleUpgrade('team')}
-              disabled={checkoutLoading !== null}
-              style={{ width: '100%' }}
-            >
-              {checkoutLoading === 'team' ? 'Loading...' : subscription?.plan === 'pro' ? 'Upgrade to Team' : 'Start Team Trial'}
-            </button>
-          )}
-          {subscription?.plan === 'team' && (
-            <p style={{ color: 'var(--primary)', textAlign: 'center', margin: 0 }}>
-              ✓ Current Plan
-            </p>
-          )}
+        <div className={`card bg-base-100 shadow-xl border ${subscription?.plan === 'team' ? 'border-primary' : 'border-base-200'}`}>
+          <div className="card-body">
+            <h3 className="card-title">Team</h3>
+            <div className="text-4xl font-bold my-2">
+              $200<span className="text-lg font-normal text-base-content/60">/month</span>
+            </div>
+            <ul className="list-disc list-inside my-4 text-base-content/80 space-y-1">
+              <li>Unlimited minutes</li>
+              <li>Priority support</li>
+              <li>7-day free trial</li>
+            </ul>
+            <div className="card-actions justify-end mt-auto">
+              {subscription?.plan !== 'team' && (
+                <button 
+                  className="btn btn-primary w-full" 
+                  onClick={() => handleUpgrade('team')}
+                  disabled={checkoutLoading !== null}
+                >
+                  {checkoutLoading === 'team' ? 'Loading...' : subscription?.plan === 'pro' ? 'Upgrade to Team' : 'Start Team Trial'}
+                </button>
+              )}
+              {subscription?.plan === 'team' && (
+                <div className="w-full text-center text-primary font-bold py-2 bg-primary/10 rounded-btn">
+                  ✓ Current Plan
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       </div>
 
       {/* Cancel notice */}
       {isCanceled && (
-        <div className="card" style={{ marginTop: '1.5rem', background: 'var(--bg-secondary)' }}>
-          <p style={{ margin: 0 }}>
-            Your subscription has been canceled. Choose a plan above to resubscribe.
-          </p>
+        <div role="alert" className="alert alert-info mt-6">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" className="stroke-current shrink-0 w-6 h-6"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+          <span>Your subscription has been canceled. Choose a plan above to resubscribe.</span>
         </div>
       )}
     </div>

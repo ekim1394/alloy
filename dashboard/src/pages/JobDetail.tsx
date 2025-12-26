@@ -97,54 +97,49 @@ function JobDetail() {
     retryMutation.mutate()
   }
 
-  const getStatusClass = (status: string) => {
-    switch (status.toLowerCase()) {
-      case 'running': return 'status-running'
-      case 'completed': return 'status-completed'
-      case 'failed': return 'status-failed'
-      default: return 'status-pending'
-    }
-  }
-
   if (isLoading) {
-    return <div className="card">Loading...</div>
+    return <div className="flex justify-center p-12"><span className="loading loading-spinner loading-lg"></span></div>
   }
 
   if (!job) {
-    return <div className="card">Job not found</div>
+    return <div className="alert alert-error max-w-2xl mx-auto my-8">Job not found</div>
   }
 
   const displayCommand = job.command || job.script || 'No command'
 
   return (
-    <div className="job-detail">
-      <div style={{ marginBottom: '1rem' }}>
-        <Link to="/" style={{ color: 'var(--text-secondary)' }}>
+    <div className="max-w-7xl mx-auto">
+      <div className="mb-4">
+        <Link to="/" className="btn btn-ghost btn-sm gap-2">
           ← Back to Jobs
         </Link>
       </div>
 
-      <div className="page-header">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
         <div>
-          <h1 style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+          <h1 className="text-3xl font-bold flex items-center gap-4">
             Job Details
-            <span className={`status ${getStatusClass(job.status)}`}>
+            <span className={`badge badge-lg ${
+                job.status === 'running' ? 'badge-info' :
+                job.status === 'completed' ? 'badge-success' :
+                job.status === 'failed' ? 'badge-error' :
+                'badge-ghost'
+            } text-white`}>
               {job.status}
             </span>
           </h1>
-          <p style={{ color: 'var(--text-secondary)', marginTop: '0.5rem' }}>
+          <p className="text-base-content/60 font-mono mt-2 text-sm">
             {job.id}
           </p>
         </div>
-        <div style={{ display: 'flex', gap: '0.5rem' }}>
+        <div className="flex gap-2">
           {job.status === 'running' && (
             <button 
-              className="btn" 
+              className="btn btn-error btn-outline" 
               onClick={handleCancel} 
-              style={{ color: 'var(--error)' }}
               disabled={cancelMutation.isPending}
             >
-              {cancelMutation.isPending ? 'Cancelling...' : 'Cancel'}
+              {cancelMutation.isPending ? 'Cancelling...' : 'Cancel Job'}
             </button>
           )}
           {job.status === 'failed' && (
@@ -153,57 +148,63 @@ function JobDetail() {
               onClick={handleRetry}
               disabled={retryMutation.isPending}
             >
-              {retryMutation.isPending ? 'Retrying...' : 'Retry'}
+              {retryMutation.isPending ? 'Retrying...' : 'Retry Job'}
             </button>
           )}
         </div>
       </div>
 
-      <div className="card" style={{ marginBottom: '1rem' }}>
-        <h3 style={{ marginBottom: '0.5rem' }}>
-          {job.script ? 'Script' : 'Command'}
-        </h3>
-        <pre style={{ 
-          background: 'var(--bg-dark)', 
-          padding: '0.75rem', 
-          borderRadius: '6px',
-          overflow: 'auto'
-        }}>
-          {displayCommand}
-        </pre>
+      <div className="card bg-base-100 shadow-sm border border-base-200 mb-6">
+        <div className="card-body p-4">
+            <h3 className="font-bold text-sm uppercase tracking-wider text-base-content/50 mb-2">
+            {job.script ? 'Script' : 'Command'}
+            </h3>
+            <div className="mockup-code bg-base-300 text-base-content before:hidden p-4 min-w-[50%]">
+                <pre><code>{displayCommand}</code></pre>
+            </div>
+        </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem', marginBottom: '1rem' }}>
-        <div className="card">
-          <div style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>Created</div>
-          <div>{new Date(job.created_at).toLocaleString()}</div>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <div className="card bg-base-100 shadow-sm border border-base-200">
+            <div className="card-body p-4">
+                <div className="text-xs uppercase font-bold text-base-content/50">Created</div>
+                <div className="font-medium">{new Date(job.created_at).toLocaleString()}</div>
+            </div>
         </div>
         {job.started_at && (
-          <div className="card">
-            <div style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>Started</div>
-            <div>{new Date(job.started_at).toLocaleString()}</div>
+          <div className="card bg-base-100 shadow-sm border border-base-200">
+             <div className="card-body p-4">
+                <div className="text-xs uppercase font-bold text-base-content/50">Started</div>
+                <div className="font-medium">{new Date(job.started_at).toLocaleString()}</div>
+            </div>
           </div>
         )}
         {job.exit_code !== null && (
-          <div className="card">
-            <div style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>Exit Code</div>
-            <div style={{ color: job.exit_code === 0 ? 'var(--success)' : 'var(--error)' }}>
-              {job.exit_code}
+          <div className="card bg-base-100 shadow-sm border border-base-200">
+             <div className="card-body p-4">
+                <div className="text-xs uppercase font-bold text-base-content/50">Exit Code</div>
+                <div className={`font-mono font-bold ${job.exit_code === 0 ? 'text-success' : 'text-error'}`}>
+                  {job.exit_code}
+                </div>
             </div>
           </div>
         )}
       </div>
 
-      <div className="card">
-        <h3 style={{ marginBottom: '1rem' }}>Logs</h3>
-        <div className="log-viewer" ref={logRef}>
+      <div className="card bg-black text-gray-300 shadow-xl overflow-hidden rounded-xl border border-gray-800">
+        <div className="bg-gray-900 px-4 py-2 border-b border-gray-800 flex justify-between items-center">
+            <h3 className="font-mono text-xs font-bold uppercase tracking-wider">Console Output</h3>
+            {job.status === 'running' && <span className="loading loading-spinner loading-xs text-primary"></span>}
+        </div>
+        <div className="p-4 font-mono text-sm h-[500px] overflow-y-auto" ref={logRef}>
           {logs.length === 0 ? (
-            <div style={{ color: 'var(--text-secondary)' }}>
+            <div className="text-gray-600 italic">
               {job.status === 'running' ? 'Waiting for logs...' : 'No logs available'}
             </div>
           ) : (
             logs.map((line, i) => (
-              <div key={i} className="log-line">{line}</div>
+              <div key={i} className="whitespace-pre-wrap break-all hover:bg-white/5 px-1">{line}</div>
             ))
           )}
         </div>
