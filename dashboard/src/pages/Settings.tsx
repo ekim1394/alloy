@@ -202,8 +202,11 @@ function Settings() {
               </p>
               <div className="mockup-code text-sm bg-base-900 border border-base-content/10">
                 <pre data-prefix="$"><code>cat ~/.alloy/config.toml</code></pre> 
-                <pre className="text-success"><code>{`orchestrator_url = "${window.location.origin}"
-api_key = "your-api-key-here"`}</code></pre>
+                <pre className="text-success"><code>
+                  {`      
+        orchestrator_url = "${window.location.origin}"
+        api_key = "your-api-key-here"`}
+                </code></pre>
               </div>
             </div>
           </div>

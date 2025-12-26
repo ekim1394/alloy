@@ -79,8 +79,7 @@ async function getAuthHeaders(): Promise<Record<string, string>> {
 export async function fetchApiKeys(): Promise<ApiKey[]> {
   const headers = await getAuthHeaders()
   const response = await fetch(`${API_BASE}/api-keys`, { headers })
-  const data = await handleResponse<{ keys: ApiKey[] }>(response)
-  return data.keys || []
+  return handleResponse<ApiKey[]>(response)
 }
 
 export async function createApiKey(name: string): Promise<CreateApiKeyResponse> {
