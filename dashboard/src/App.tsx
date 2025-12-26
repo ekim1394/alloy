@@ -8,7 +8,10 @@ import Settings from './pages/Settings'
 import BillingSetup from './pages/BillingSetup'
 import JobDetail from './pages/JobDetail'
 import Landing from './pages/Landing'
+import RawMarkdownPage from './components/RawMarkdownPage'
 import Sidebar from './components/Sidebar'
+import termsContent from './assets/terms.md?raw'
+import privacyContent from './assets/privacy.md?raw'
 import { fetchSubscription } from './lib/api'
 import type { Subscription } from './types'
 
@@ -123,7 +126,12 @@ function AppContent() {
   if (hostMode === 'landing') {
     return (
       <div className="app">
-        <Landing />
+        <Routes>
+          <Route path="/" element={<Landing />} />
+          <Route path="/terms" element={<RawMarkdownPage content={termsContent} title="Terms of Service" />} />
+          <Route path="/privacy" element={<RawMarkdownPage content={privacyContent} title="Privacy Policy" />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
       </div>
     )
   }
@@ -151,6 +159,8 @@ function AppContent() {
         <Routes>
           <Route path="/login" element={<><NavBar /><main className="main-content"><Login /></main></>} />
           <Route path="/signup" element={<><NavBar /><main className="main-content"><Signup /></main></>} />
+          <Route path="/terms" element={<RawMarkdownPage content={termsContent} title="Terms of Service" />} />
+          <Route path="/privacy" element={<RawMarkdownPage content={privacyContent} title="Privacy Policy" />} />
           <Route path="*" element={<Landing />} />
         </Routes>
       </div>
