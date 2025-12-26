@@ -32,20 +32,6 @@ function Sidebar({ onSignOut }: SidebarProps) {
           Dashboard
         </Link>
         <Link 
-          to="/agents" 
-          className={`sidebar-nav-item ${isActive('/agents') ? 'active' : ''}`}
-        >
-          <span className="sidebar-nav-icon">🖥️</span>
-          Agents
-        </Link>
-        <Link 
-          to="/history" 
-          className={`sidebar-nav-item ${isActive('/history') ? 'active' : ''}`}
-        >
-          <span className="sidebar-nav-icon">🕐</span>
-          Build History
-        </Link>
-        <Link 
           to="/settings" 
           className={`sidebar-nav-item ${isActive('/settings') ? 'active' : ''}`}
         >

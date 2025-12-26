@@ -182,8 +182,6 @@ function AppContent() {
           <Route path="/signup" element={<Dashboard />} />
           <Route path="/settings" element={<Settings />} />
           <Route path="/jobs/:jobId" element={<JobDetail />} />
-          <Route path="/agents" element={<div className="page-placeholder"><h2>Agents</h2><p className="placeholder-text">Agent management coming soon...</p></div>} />
-          <Route path="/history" element={<div className="page-placeholder"><h2>Build History</h2><p className="placeholder-text">Build history coming soon...</p></div>} />
         </Routes>
       </main>
     </div>
