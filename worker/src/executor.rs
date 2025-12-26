@@ -329,16 +329,8 @@ impl JobExecutor {
             if output.status.success() {
                 let files = String::from_utf8_lossy(&output.stdout);
                 for line in files.lines() {
-                    if !line.is_empty() && !line.starts_with("total") {
-                        // Parse ls output and create artifact
-                        if let Some(name) = line.split_whitespace().last() {
-                            artifacts.push(Artifact {
-                                name: name.to_string(),
-                                path: pattern.to_string(),
-                                size_bytes: 0, // TODO: Parse from ls
-                                download_url: None, // Will be set after upload
-                            });
-                        }
+                    if let Some(artifact) = parse_ls_line(line, pattern) {
+                        artifacts.push(artifact);
                     }
                 }
             }
@@ -373,3 +365,69 @@ impl JobExecutor {
     }
 }
 
+/// Helper to parse ls -la output
+fn parse_ls_line(line: &str, pattern: &str) -> Option<Artifact> {
+    if line.is_empty() || line.starts_with("total") {
+        return None;
+    }
+
+    let parts: Vec<&str> = line.split_whitespace().collect();
+
+    // We expect at least enough parts to have a filename.
+    // ls -l output format:
+    // permissions links owner group size date time name
+    // -rw-r--r--  1     user  staff 1234 Oct  25 10:00 file.txt
+
+    // Safe check: assume name is last.
+    let name = parts.last()?;
+
+    // Try to parse size at index 4. If fails or index out of bounds, default to 0.
+    // This assumes standard 8-column ls output (or 9 with year/time split differently, but size is usually 5th field).
+    // Index 4 is the 5th field.
+    let size_bytes = if parts.len() >= 5 {
+        parts[4].parse::<u64>().unwrap_or(0)
+    } else {
+        0
+    };
+
+    Some(Artifact {
+        name: name.to_string(),
+        path: pattern.to_string(),
+        size_bytes,
+        download_url: None,
+    })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_parse_ls_line() {
+        let pattern = "~/build/*.ipa";
+
+        // Standard case
+        let line = "-rw-r--r--  1 user  staff  12345678 Oct 25 10:00 app.ipa";
+        let artifact = parse_ls_line(line, pattern).expect("Should parse");
+        assert_eq!(artifact.name, "app.ipa");
+        assert_eq!(artifact.size_bytes, 12345678);
+
+        // Empty line
+        assert!(parse_ls_line("", pattern).is_none());
+
+        // Total line
+        assert!(parse_ls_line("total 1234", pattern).is_none());
+
+        // Missing size (malformed) - should still parse name but size 0 if index 4 is missing/invalid
+        let line_short = "-rw-r--r-- 1 user app.ipa"; // Not enough fields
+        let artifact = parse_ls_line(line_short, pattern).expect("Should parse");
+        assert_eq!(artifact.name, "app.ipa");
+        assert_eq!(artifact.size_bytes, 0); // Default to 0
+
+        // Invalid size
+        let line_invalid_size = "-rw-r--r--  1 user  staff  NOT_A_NUMBER Oct 25 10:00 app.ipa";
+        let artifact = parse_ls_line(line_invalid_size, pattern).expect("Should parse");
+        assert_eq!(artifact.name, "app.ipa");
+        assert_eq!(artifact.size_bytes, 0);
+    }
+}
