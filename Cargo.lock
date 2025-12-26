@@ -3838,6 +3838,7 @@ dependencies = [
  "shared",
  "thiserror",
  "tokio",
+ "tokio-util",
  "tracing",
  "tracing-subscriber",
  "uuid",

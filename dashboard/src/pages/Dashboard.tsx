@@ -1,9 +1,22 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
+import { 
+  CheckCircle2, 
+  XCircle, 
+  Clock, 
+  Search, 
+  RotateCw, 
+  Plus, 
+  Server, 
+  Activity,
+  ArrowUpRight,
+  ArrowDownRight
+} from 'lucide-react'
 import { fetchJobs } from '../lib/api'
 import type { Job } from '../types'
 import LiveLogPanel from '../components/LiveLogPanel'
+import EmptyState from '../assets/empty-state.png'
 
 function Dashboard() {
   const [selectedJob, setSelectedJob] = useState<Job | null>(null)
@@ -48,10 +61,10 @@ function Dashboard() {
 
   const getStatusIcon = (status: string) => {
     switch (status.toLowerCase()) {
-      case 'running': return '●'
-      case 'completed': return '✓'
-      case 'failed': return '✕'
-      default: return '○'
+      case 'running': return <Activity size={16} className="animate-pulse" />
+      case 'completed': return <CheckCircle2 size={16} />
+      case 'failed': return <XCircle size={16} />
+      default: return <Clock size={16} />
     }
   }
 
@@ -66,85 +79,112 @@ function Dashboard() {
   }
 
   return (
-    <div className="dashboard-container">
-      <div className="dashboard-main">
+    <div className="container mx-auto p-6 max-w-7xl">
+      <div className="flex flex-col gap-8">
         {/* Header */}
-        <div className="dashboard-header">
-          <div className="dashboard-header-left">
-            <h1 className="dashboard-title">Overview</h1>
-            <p className="dashboard-subtitle">Monitor Apple Silicon build clusters and agent status.</p>
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight">Overview</h1>
+            <p className="text-base-content/60 mt-1 font-medium">Monitor Apple Silicon build clusters and agent status.</p>
           </div>
-          <div className="dashboard-header-actions">
-            <button className="btn btn-secondary" onClick={() => refetch()}>
-              ↻ Refresh
+          <div className="flex gap-3">
+            <button className="btn btn-outline gap-2" onClick={() => refetch()}>
+              <RotateCw size={16} />
+              Refresh
             </button>
-            <button className="btn btn-primary">
-              + New Workflow
+            <button className="btn btn-primary gap-2">
+              <Plus size={18} />
+              New Workflow
             </button>
           </div>
         </div>
 
         {/* Stats Cards */}
-        <div className="stats-grid">
-          <div className="stat-card">
-            <div className="stat-header">
-              <span className="stat-label">Active Builds</span>
-              <span className="stat-icon">🔧</span>
-            </div>
-            <div className="stat-value">
-              {activeBuilds}
-              <span className="stat-trend positive">↑1</span>
-            </div>
-          </div>
-
-          <div className="stat-card">
-            <div className="stat-header">
-              <span className="stat-label">Avg Queue Time</span>
-              <span className="stat-icon">⏱️</span>
-            </div>
-            <div className="stat-value">
-              45s
-              <span className="stat-trend negative">↓12s</span>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="card bg-base-100 shadow-sm border border-base-200">
+            <div className="card-body p-6">
+              <div className="flex justify-between items-start">
+                <div>
+                  <div className="stat-title text-base-content/60 font-medium">Active Builds</div>
+                  <div className="stat-value text-primary mt-2">{activeBuilds}</div>
+                </div>
+                <div className="p-2 bg-primary/10 rounded-lg text-primary">
+                  <Activity size={24} />
+                </div>
+              </div>
+              <div className="stat-desc text-success flex items-center gap-1 mt-2 font-medium">
+                <ArrowUpRight size={14} /> 1 since last hour
+              </div>
             </div>
           </div>
 
-          <div className="stat-card">
-            <div className="stat-header">
-              <span className="stat-label">Success Rate</span>
-              <span className="stat-icon">✓</span>
-            </div>
-            <div className="stat-value">
-              {successRate}%
-              <span className="stat-trend positive">↑2.1%</span>
+          <div className="card bg-base-100 shadow-sm border border-base-200">
+            <div className="card-body p-6">
+              <div className="flex justify-between items-start">
+                <div>
+                  <div className="stat-title text-base-content/60 font-medium">Avg Queue Time</div>
+                  <div className="stat-value mt-2">45s</div>
+                </div>
+                <div className="p-2 bg-base-200 rounded-lg text-base-content/70">
+                  <Clock size={24} />
+                </div>
+              </div>
+              <div className="stat-desc text-success flex items-center gap-1 mt-2 font-medium">
+                <ArrowDownRight size={14} /> 12s from yesterday
+              </div>
             </div>
           </div>
 
-          <div className="stat-card">
-            <div className="stat-header">
-              <span className="stat-label">Agents Online</span>
-              <span className="stat-icon">🖥️</span>
+          <div className="card bg-base-100 shadow-sm border border-base-200">
+            <div className="card-body p-6">
+              <div className="flex justify-between items-start">
+                <div>
+                  <div className="stat-title text-base-content/60 font-medium">Success Rate</div>
+                  <div className="stat-value mt-2">{successRate}%</div>
+                </div>
+                <div className="p-2 bg-success/10 rounded-lg text-success">
+                  <CheckCircle2 size={24} />
+                </div>
+              </div>
+              <div className="stat-desc text-success flex items-center gap-1 mt-2 font-medium">
+                <ArrowUpRight size={14} /> 2.1% this week
+              </div>
             </div>
-            <div className="stat-value">
-              8<span className="stat-total">/8</span>
+          </div>
+
+          <div className="card bg-base-100 shadow-sm border border-base-200">
+             <div className="card-body p-6">
+              <div className="flex justify-between items-start">
+                <div>
+                  <div className="stat-title text-base-content/60 font-medium">Agents Online</div>
+                  <div className="stat-value mt-2">8<span className="text-xl opacity-40 font-normal">/8</span></div>
+                </div>
+                <div className="p-2 bg-base-200 rounded-lg text-base-content/70">
+                  <Server size={24} />
+                </div>
+              </div>
+              <div className="stat-desc text-success mt-2 font-medium">All systems operational</div>
             </div>
           </div>
         </div>
 
         {/* Search & Filters */}
-        <div className="filter-bar">
-          <div className="search-input-wrapper">
-            <span className="search-icon">🔍</span>
+        <div className="flex flex-col md:flex-row gap-4 items-center">
+          <div className="relative flex-1 w-full">
+             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-base-content/40">
+                <Search size={18} />
+             </div>
             <input
               type="text"
               placeholder="Search by Job ID, Commit, or Workflow..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="search-input"
+              className="input input-bordered w-full pl-10 focus:outline-none"
             />
           </div>
-          <div className="filter-dropdowns">
+          <div className="flex gap-2 w-full md:w-auto">
             <select 
-              className="filter-select"
+              className="select select-bordered flex-1 md:flex-none"
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
             >
@@ -154,77 +194,93 @@ function Dashboard() {
               <option value="failed">Failed</option>
               <option value="pending">Queued</option>
             </select>
-            <select className="filter-select">
+            <select className="select select-bordered flex-1 md:flex-none">
               <option>Agent: Any</option>
             </select>
           </div>
         </div>
 
         {/* Jobs Table */}
-        {isLoading ? (
-          <div className="card">Loading jobs...</div>
-        ) : filteredJobs.length === 0 ? (
-          <div className="empty-state">
-            <p>No jobs yet. Run your first job with:</p>
-            <pre>alloy run -c "xcodebuild test -scheme MyApp"</pre>
-          </div>
-        ) : (
-          <div className="jobs-table-wrapper">
-            <table className="jobs-table">
-              <thead>
-                <tr>
-                  <th>STATUS</th>
-                  <th>JOB ID / WORKFLOW</th>
-                  <th>AGENT</th>
-                  <th>DURATION</th>
-                  <th>ACTIONS</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredJobs.map((job) => (
-                  <tr 
-                    key={job.id} 
-                    className={selectedJob?.id === job.id ? 'selected' : ''}
-                    onClick={() => setSelectedJob(job)}
-                  >
-                    <td>
-                      <span className={`status-indicator status-${job.status}`}>
-                        <span className="status-dot">{getStatusIcon(job.status)}</span>
-                        {getStatusLabel(job.status)}
-                      </span>
-                    </td>
-                    <td>
-                      <div className="job-info">
-                        <span className="job-id">#{job.id.slice(0, 8)}</span>
-                        <span className="job-name">{(job.command || job.script || 'Build').split(' ')[0]}</span>
-                        <div className="job-meta">
-                          <span className="job-commit">{job.id.slice(-7)}</span>
-                          <span className="job-desc">{(job.command || job.script || '').substring(0, 30)}</span>
-                        </div>
-                      </div>
-                    </td>
-                    <td>
-                      <span className="agent-chip">
-                        <span className="agent-icon">🖥️</span>
-                        {job.worker_id ? `M1-${job.worker_id.slice(0, 4)}` : '—'}
-                      </span>
-                    </td>
-                    <td className="duration-cell">{formatDuration(job)}</td>
-                    <td>
-                      <Link 
-                        to={`/jobs/${job.id}`}
-                        className="action-btn"
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        →
-                      </Link>
-                    </td>
+        <div className="card bg-base-100 shadow-sm border border-base-200 overflow-hidden">
+          {isLoading ? (
+             <div className="flex justify-center p-12">
+               <span className="loading loading-spinner loading-lg text-primary"></span>
+             </div>
+          ) : filteredJobs.length === 0 ? (
+            <div className="flex flex-col items-center justify-center p-16 text-center">
+              <img src={EmptyState} alt="No jobs found" className="w-64 mb-6 opacity-80" />
+              <h3 className="text-xl font-bold mb-2">No jobs found</h3>
+              <p className="text-base-content/60 max-w-md mb-6">
+                Get started by running your first job using the Alloy CLI.
+              </p>
+              <div className="mockup-code bg-base-300 text-base-content text-left shadow-none border border-base-content/10">
+                <pre data-prefix="$"><code>alloy run -c "xcodebuild test -scheme MyApp"</code></pre>
+              </div>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="table table-lg w-full">
+                <thead className="bg-base-200/50">
+                  <tr>
+                    <th className="font-semibold text-xs tracking-wider opacity-70">STATUS</th>
+                    <th className="font-semibold text-xs tracking-wider opacity-70">JOB ID / WORKFLOW</th>
+                    <th className="font-semibold text-xs tracking-wider opacity-70">AGENT</th>
+                    <th className="font-semibold text-xs tracking-wider opacity-70">DURATION</th>
+                    <th className="font-semibold text-xs tracking-wider opacity-70">ACTIONS</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
+                </thead>
+                <tbody>
+                  {filteredJobs.map((job) => (
+                    <tr 
+                      key={job.id} 
+                      className={`hover cursor-pointer transition-colors ${selectedJob?.id === job.id ? 'bg-base-200' : ''}`}
+                      onClick={() => setSelectedJob(job)}
+                    >
+                      <td>
+                        <div className={`badge gap-2 h-8 pl-2 pr-3 ${
+                            job.status === 'running' ? 'badge-info text-info-content' :
+                            job.status === 'completed' ? 'badge-success text-success-content' :
+                            job.status === 'failed' ? 'badge-error text-error-content' :
+                            'badge-ghost'
+                        } font-medium`}>
+                            {getStatusIcon(job.status)}
+                            {getStatusLabel(job.status)}
+                        </div>
+                      </td>
+                      <td>
+                        <div>
+                          <div className="flex items-baseline gap-2">
+                             <span className="font-mono text-xs opacity-50">#{job.id.slice(0, 8)}</span>
+                             <span className="font-bold">{(job.command || job.script || 'Build').split(' ')[0]}</span>
+                          </div>
+                          <div className="flex items-center gap-2 text-xs text-base-content/60 mt-1">
+                            <span className="font-mono bg-base-200/80 px-1 rounded border border-base-300">{job.id.slice(-7)}</span>
+                            <span className="truncate max-w-[200px]">{(job.command || job.script || '').substring(0, 30)}</span>
+                          </div>
+                        </div>
+                      </td>
+                      <td>
+                        <div className="badge badge-ghost badge-outline gap-1 font-mono text-xs">
+                           <Server size={10} /> {job.worker_id ? `M1-${job.worker_id.slice(0, 4)}` : '—'}
+                        </div>
+                      </td>
+                      <td className="font-mono text-sm">{formatDuration(job)}</td>
+                      <td>
+                        <Link 
+                          to={`/jobs/${job.id}`}
+                          className="btn btn-ghost btn-sm btn-circle"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <ArrowUpRight size={18} />
+                        </Link>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Live Log Panel */}

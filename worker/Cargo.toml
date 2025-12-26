@@ -33,3 +33,4 @@ dotenvy.workspace = true
 
 # Hostname detection
 hostname = "0.3"
+tokio-util = { version = "0.7.17", features = ["io"] }
