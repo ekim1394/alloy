@@ -9,10 +9,10 @@ use tokio::process::Command;
 use tokio::sync::Mutex;
 use uuid::Uuid;
 
-use shared::{Artifact, Job, JobResult, LogEntry, LogStream, SourceType};
 use crate::config::Config;
 use crate::orchestrator_client::OrchestratorClient;
 use crate::vm_pool::{PooledVm, VmPool};
+use shared::{Artifact, Job, JobResult, LogEntry, LogStream, SourceType};
 
 /// Default VM credentials (admin/admin for Cirrus Tart images)
 const VM_USER: &str = "admin";
@@ -26,7 +26,12 @@ pub struct JobExecutor {
 }
 
 impl JobExecutor {
-    pub fn new(worker_id: Uuid, client: OrchestratorClient, config: Config, vm_pool: Arc<VmPool>) -> Self {
+    pub fn new(
+        worker_id: Uuid,
+        client: OrchestratorClient,
+        config: Config,
+        vm_pool: Arc<VmPool>,
+    ) -> Self {
         Self {
             worker_id,
             client,
@@ -38,68 +43,74 @@ impl JobExecutor {
     /// Execute a job in a Tart VM with timeout
     pub async fn execute(&self, job: &Job) -> Result<JobResult> {
         let timeout_duration = std::time::Duration::from_secs(self.config.job_timeout_minutes * 60);
-        
+
         // Acquire a VM from the pool
-        let vm = self.vm_pool.acquire().await
+        let vm = self
+            .vm_pool
+            .acquire()
+            .await
             .ok_or_else(|| anyhow::anyhow!("No VMs available in pool"))?;
-        
+
         let vm_for_release = Arc::clone(&vm);
         let pool_for_release = Arc::clone(&self.vm_pool);
-        
+
         let result = tokio::time::timeout(timeout_duration, self.execute_with_vm(job, &vm)).await;
-        
+
         // Always release VM back to pool
         if let Err(e) = pool_for_release.release(vm_for_release).await {
             tracing::warn!(job_id = %job.id, "Failed to release VM to pool: {}", e);
         }
-        
+
         match result {
             Ok(inner_result) => inner_result,
             Err(_) => {
                 tracing::error!(job_id = %job.id, timeout_minutes = self.config.job_timeout_minutes, "Job timed out");
-                anyhow::bail!("Job timed out after {} minutes", self.config.job_timeout_minutes)
-            }
+                anyhow::bail!(
+                    "Job timed out after {} minutes",
+                    self.config.job_timeout_minutes
+                )
+            },
         }
     }
 
     /// Execute job with a specific pooled VM
     async fn execute_with_vm(&self, job: &Job, vm: &Arc<Mutex<PooledVm>>) -> Result<JobResult> {
         let start_time = Utc::now();
-        
+
         let vm_ip = {
             let guard = vm.lock().await;
             tracing::info!(job_id = %job.id, vm_name = %guard.name, vm_ip = %guard.ip, "Using pooled VM");
             guard.ip.clone()
         };
-        
+
         // Define log path
         let log_path = std::env::temp_dir().join(format!("job-{}.log", job.id));
-        
+
         // Step 1: Fetch source code into VM
         tracing::info!(job_id = %job.id, source_type = ?job.source_type, "Fetching source...");
         self.fetch_source(job, &vm_ip).await?;
-        
+
         // Step 2: Execute the command (capturing logs to file)
         tracing::info!(job_id = %job.id, "Executing command...");
         let exit_code = self.execute_in_vm(job, &vm_ip, &log_path).await?;
-        
+
         // Step 3: Upload logs to storage
         tracing::info!(job_id = %job.id, "Uploading logs...");
         if let Err(e) = self.client.upload_log_file(job.id, &log_path).await {
             tracing::error!(job_id = %job.id, "Failed to upload logs: {}", e);
-            // Don't fail the build just because log upload failed, 
+            // Don't fail the build just because log upload failed,
             // but we should probably note it.
         }
-        
+
         // Cleanup log file
         let _ = tokio::fs::remove_file(&log_path).await;
-        
+
         // Step 4: Collect artifacts
         let artifacts = self.collect_artifacts(job, &vm_ip).await?;
-        
+
         let end_time = Utc::now();
         let build_minutes = (end_time - start_time).num_seconds() as f64 / 60.0;
-        
+
         Ok(JobResult {
             job_id: job.id,
             exit_code,
@@ -110,9 +121,11 @@ impl JobExecutor {
 
     /// Fetch source code into the VM based on source type
     async fn fetch_source(&self, job: &Job, vm_ip: &str) -> Result<()> {
-        let source_url = job.source_url.as_ref()
+        let source_url = job
+            .source_url
+            .as_ref()
             .ok_or_else(|| anyhow::anyhow!("No source URL provided"))?;
-        
+
         let fetch_cmd = match job.source_type {
             SourceType::Git => {
                 // Clone git repository
@@ -120,35 +133,39 @@ impl JobExecutor {
                     "cd ~ && git clone --depth 1 '{}' workspace && cd workspace",
                     source_url
                 )
-            }
+            },
             SourceType::Upload => {
                 // Download and extract archive
                 format!(
                     "cd ~ && curl -sL '{}' -o source.zip && unzip -q source.zip -d workspace && cd workspace",
                     source_url
                 )
-            }
+            },
         };
-        
+
         // Use sshpass for non-interactive password authentication
         let output = Command::new("sshpass")
             .args([
-                "-p", VM_PASSWORD,
+                "-p",
+                VM_PASSWORD,
                 "ssh",
-                "-o", "StrictHostKeyChecking=no",
-                "-o", "UserKnownHostsFile=/dev/null",
-                "-o", "PubkeyAuthentication=no",
+                "-o",
+                "StrictHostKeyChecking=no",
+                "-o",
+                "UserKnownHostsFile=/dev/null",
+                "-o",
+                "PubkeyAuthentication=no",
                 &format!("{}@{}", VM_USER, vm_ip),
                 &fetch_cmd,
             ])
             .output()
             .await?;
-        
+
         if !output.status.success() {
             let stderr = String::from_utf8_lossy(&output.stderr);
             anyhow::bail!("Failed to fetch source: {}", stderr);
         }
-        
+
         Ok(())
     }
 
@@ -178,11 +195,8 @@ impl JobExecutor {
 
         // Wait for VM to boot and get IP
         tokio::time::sleep(std::time::Duration::from_secs(30)).await;
-        
-        let output = Command::new("tart")
-            .args(["ip", vm_name])
-            .output()
-            .await?;
+
+        let output = Command::new("tart").args(["ip", vm_name]).output().await?;
 
         if !output.status.success() {
             anyhow::bail!("Failed to get VM IP");
@@ -193,15 +207,21 @@ impl JobExecutor {
     }
 
     /// Execute the job command inside the VM via SSH
-    async fn execute_in_vm(&self, job: &Job, vm_ip: &str, log_path: &std::path::Path) -> Result<i32> {
+    async fn execute_in_vm(
+        &self,
+        job: &Job,
+        vm_ip: &str,
+        log_path: &std::path::Path,
+    ) -> Result<i32> {
         // Get the executable (command or script)
-        let executable = job.executable()
+        let executable = job
+            .executable()
             .ok_or_else(|| anyhow::anyhow!("Job has no command or script"))?;
-        
+
         // Setup log writer
         let log_file = tokio::fs::File::create(log_path).await?;
         let log_writer = Arc::new(Mutex::new(tokio::io::BufWriter::new(log_file)));
-        
+
         // If it's a script, write it to VM and execute
         let run_cmd = if job.script.is_some() {
             // Write script to file and execute
@@ -216,32 +236,35 @@ impl JobExecutor {
 
         let mut cmd = Command::new("sshpass");
         cmd.args([
-            "-p", VM_PASSWORD,
+            "-p",
+            VM_PASSWORD,
             "ssh",
-            "-tt",  // Force PTY allocation for tools like fastlane
-            "-o", "StrictHostKeyChecking=no",
-            "-o", "UserKnownHostsFile=/dev/null",
-            "-o", "PubkeyAuthentication=no",
+            "-tt", // Force PTY allocation for tools like fastlane
+            "-o",
+            "StrictHostKeyChecking=no",
+            "-o",
+            "UserKnownHostsFile=/dev/null",
+            "-o",
+            "PubkeyAuthentication=no",
             &format!("{}@{}", VM_USER, vm_ip),
             &run_cmd,
         ])
         .stdout(Stdio::piped())
         .stderr(Stdio::piped());
 
-
         let mut child = cmd.spawn()?;
-        
+
         // Stream stdout
         if let Some(stdout) = child.stdout.take() {
             let client = self.client.clone();
             let worker_id = self.worker_id;
             let job_id = job.id;
             let writer = Arc::clone(&log_writer);
-            
+
             tokio::spawn(async move {
                 let reader = BufReader::new(stdout);
                 let mut lines = reader.lines();
-                
+
                 while let Ok(Some(line)) = lines.next_line().await {
                     // Write to file
                     {
@@ -261,18 +284,18 @@ impl JobExecutor {
                 }
             });
         }
-        
+
         // Stream stderr
         if let Some(stderr) = child.stderr.take() {
             let client = self.client.clone();
             let worker_id = self.worker_id;
             let job_id = job.id;
             let writer = Arc::clone(&log_writer);
-            
+
             tokio::spawn(async move {
                 let reader = BufReader::new(stderr);
                 let mut lines = reader.lines();
-                
+
                 while let Ok(Some(line)) = lines.next_line().await {
                     // Write to file
                     {
@@ -294,7 +317,7 @@ impl JobExecutor {
         }
 
         let status = child.wait().await?;
-        
+
         // Flush writer
         let mut w = log_writer.lock().await;
         let _ = w.flush().await;
@@ -305,21 +328,24 @@ impl JobExecutor {
     /// Collect build artifacts from the VM
     async fn collect_artifacts(&self, job: &Job, vm_ip: &str) -> Result<Vec<Artifact>> {
         let mut artifacts = Vec::new();
-        
+
         // Look for common artifact patterns
         let patterns = [
             "~/Library/Developer/Xcode/DerivedData/**/*.xcresult",
             "~/build/*.app",
             "~/build/*.ipa",
         ];
-        
+
         for pattern in patterns {
             let output = Command::new("sshpass")
                 .args([
-                    "-p", VM_PASSWORD,
+                    "-p",
+                    VM_PASSWORD,
                     "ssh",
-                    "-o", "StrictHostKeyChecking=no",
-                    "-o", "UserKnownHostsFile=/dev/null",
+                    "-o",
+                    "StrictHostKeyChecking=no",
+                    "-o",
+                    "UserKnownHostsFile=/dev/null",
                     &format!("{}@{}", VM_USER, vm_ip),
                     &format!("ls -la {} 2>/dev/null || true", pattern),
                 ])
@@ -335,36 +361,51 @@ impl JobExecutor {
                         match file_path {
                             Ok(path) => {
                                 // Upload to orchestrator
-                                match self.client.upload_artifact(job.id, &artifact.name, &path).await {
+                                match self
+                                    .client
+                                    .upload_artifact(job.id, &artifact.name, &path)
+                                    .await
+                                {
                                     Ok(url) => {
                                         artifact.download_url = Some(url);
                                         artifacts.push(artifact);
                                     },
                                     Err(e) => {
-                                        tracing::error!("Failed to upload artifact {}: {}", artifact.name, e);
+                                        tracing::error!(
+                                            "Failed to upload artifact {}: {}",
+                                            artifact.name,
+                                            e
+                                        );
                                         // We still push the artifact record, but without URL
                                         artifacts.push(artifact);
-                                    }
+                                    },
                                 }
                                 // Clean up temp file
                                 let _ = tokio::fs::remove_file(&path).await;
                             },
                             Err(e) => {
-                                tracing::error!("Failed to download artifact {} from VM: {}", artifact.name, e);
-                            }
+                                tracing::error!(
+                                    "Failed to download artifact {} from VM: {}",
+                                    artifact.name,
+                                    e
+                                );
+                            },
                         }
                     }
                 }
             }
         }
-        
+
         Ok(artifacts)
     }
 
     /// Download a file from the VM via SCP
     async fn download_from_vm(&self, vm_ip: &str, filename: &str) -> Result<std::path::PathBuf> {
         // Validate filename to prevent shell injection
-        if filename.chars().any(|c| !c.is_alphanumeric() && c != '.' && c != '-' && c != '_') {
+        if filename
+            .chars()
+            .any(|c| !c.is_alphanumeric() && c != '.' && c != '-' && c != '_')
+        {
             anyhow::bail!("Invalid filename: {}", filename);
         }
 
@@ -372,10 +413,13 @@ impl JobExecutor {
         let find_cmd = format!("find ~ -name '{}' -type f | head -n 1", filename);
         let output = Command::new("sshpass")
             .args([
-                "-p", VM_PASSWORD,
+                "-p",
+                VM_PASSWORD,
                 "ssh",
-                "-o", "StrictHostKeyChecking=no",
-                "-o", "UserKnownHostsFile=/dev/null",
+                "-o",
+                "StrictHostKeyChecking=no",
+                "-o",
+                "UserKnownHostsFile=/dev/null",
                 &format!("{}@{}", VM_USER, vm_ip),
                 &find_cmd,
             ])
@@ -384,17 +428,20 @@ impl JobExecutor {
 
         let full_path = String::from_utf8_lossy(&output.stdout).trim().to_string();
         if full_path.is_empty() {
-             anyhow::bail!("File not found in VM");
+            anyhow::bail!("File not found in VM");
         }
 
         // Now scp it
         let temp_path = std::env::temp_dir().join(filename);
         let scp_output = Command::new("sshpass")
             .args([
-                "-p", VM_PASSWORD,
+                "-p",
+                VM_PASSWORD,
                 "scp",
-                "-o", "StrictHostKeyChecking=no",
-                "-o", "UserKnownHostsFile=/dev/null",
+                "-o",
+                "StrictHostKeyChecking=no",
+                "-o",
+                "UserKnownHostsFile=/dev/null",
                 &format!("{}@{}:{}", VM_USER, vm_ip, full_path),
                 temp_path.to_str().unwrap(),
             ])
@@ -402,7 +449,10 @@ impl JobExecutor {
             .await?;
 
         if !scp_output.status.success() {
-             anyhow::bail!("SCP failed: {}", String::from_utf8_lossy(&scp_output.stderr));
+            anyhow::bail!(
+                "SCP failed: {}",
+                String::from_utf8_lossy(&scp_output.stderr)
+            );
         }
 
         // Return path for streaming upload
@@ -412,11 +462,8 @@ impl JobExecutor {
     /// Delete the VM
     async fn tart_delete(&self, vm_name: &str) -> Result<()> {
         // First stop the VM if running
-        let _ = Command::new("tart")
-            .args(["stop", vm_name])
-            .output()
-            .await;
-        
+        let _ = Command::new("tart").args(["stop", vm_name]).output().await;
+
         // Then delete it
         let output = Command::new("tart")
             .args(["delete", vm_name])

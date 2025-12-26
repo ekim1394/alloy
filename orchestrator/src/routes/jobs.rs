@@ -8,9 +8,11 @@ use axum::{
 use serde::Deserialize;
 use uuid::Uuid;
 
-use shared::{ApiError, CreateJobRequest, CreateJobResponse, Job, JobStatus, SourceType, UploadUrlResponse};
-use crate::state::AppState;
 use crate::auth::AuthUser;
+use crate::state::AppState;
+use shared::{
+    ApiError, CreateJobRequest, CreateJobResponse, Job, JobStatus, SourceType, UploadUrlResponse,
+};
 
 /// POST /api/v1/jobs - Create a new build job
 pub async fn create_job(
@@ -22,13 +24,16 @@ pub async fn create_job(
     if request.command.is_none() && request.script.is_none() {
         return Err((
             StatusCode::BAD_REQUEST,
-            Json(ApiError::new("Either 'command' or 'script' is required", "validation_error")),
+            Json(ApiError::new(
+                "Either 'command' or 'script' is required",
+                "validation_error",
+            )),
         ));
     }
 
     // Extract customer_id from auth token
     let customer_id = auth_user.user_id;
-    
+
     // Create the job based on command or script
     let job = if let Some(ref script) = request.script {
         Job::with_script(
@@ -45,17 +50,17 @@ pub async fn create_job(
             request.source_url.clone(),
         )
     };
-    
+
     // Store in Supabase
     match state.supabase.create_job(&job).await {
         Ok(_) => {
             // Create a log stream for this job
             state.create_log_stream(job.id).await;
-            
+
             let stream_url = format!("{}/api/v1/jobs/{}/logs", state.config.base_url, job.id);
-            
+
             tracing::info!(job_id = %job.id, "Created new job");
-            
+
             Ok((
                 StatusCode::CREATED,
                 Json(CreateJobResponse {
@@ -64,14 +69,14 @@ pub async fn create_job(
                     stream_url,
                 }),
             ))
-        }
+        },
         Err(e) => {
             tracing::error!("Failed to create job: {}", e);
             Err((
                 StatusCode::INTERNAL_SERVER_ERROR,
                 Json(ApiError::new(e.to_string(), "database_error")),
             ))
-        }
+        },
     }
 }
 
@@ -96,23 +101,31 @@ pub async fn request_upload(
     if request.command.is_none() && request.script.is_none() {
         return Err((
             StatusCode::BAD_REQUEST,
-            Json(ApiError::new("Either 'command' or 'script' is required", "validation_error")),
+            Json(ApiError::new(
+                "Either 'command' or 'script' is required",
+                "validation_error",
+            )),
         ));
     }
 
     // Extract customer_id from auth token
     let customer_id = auth_user.user_id;
     let job_id = Uuid::new_v4();
-    
+
     // Use commit_sha for storage path if provided (enables deduplication)
     // Same commit = same archive file in storage
-    let storage_key = request.commit_sha.as_ref()
+    let storage_key = request
+        .commit_sha
+        .as_ref()
         .map(|sha| format!("sources/{}.zip", sha))
         .unwrap_or_else(|| format!("sources/{}.zip", job_id));
-    
+
     // Check if archive already exists (enables skip_upload for deduplication)
     let archive_exists = if request.commit_sha.is_some() {
-        let check_url = format!("{}/storage/v1/object/public/{}", state.config.supabase_url, storage_key);
+        let check_url = format!(
+            "{}/storage/v1/object/public/{}",
+            state.config.supabase_url, storage_key
+        );
         let http_client = reqwest::Client::new();
         match http_client.head(&check_url).send().await {
             Ok(resp) => resp.status().is_success(),
@@ -121,16 +134,19 @@ pub async fn request_upload(
     } else {
         false
     };
-    
+
     if archive_exists {
         tracing::info!(storage_key = %storage_key, "Archive already exists, skip_upload enabled");
     }
-    
+
     // CLI uploads to orchestrator, which proxies to Supabase (keeps service key secure)
     let upload_url = format!("{}/api/v1/jobs/{}/upload", state.config.base_url, job_id);
     // Download URL is public Supabase storage
-    let download_url = format!("{}/storage/v1/object/public/{}", state.config.supabase_url, storage_key);
-    
+    let download_url = format!(
+        "{}/storage/v1/object/public/{}",
+        state.config.supabase_url, storage_key
+    );
+
     // Create job based on command or script
     let mut job = if let Some(ref script) = request.script {
         Job::with_script(
@@ -148,11 +164,11 @@ pub async fn request_upload(
         )
     };
     job.id = job_id;
-    
+
     match state.supabase.create_job(&job).await {
         Ok(_) => {
             tracing::info!(job_id = %job.id, "Created upload job, awaiting file upload");
-            
+
             Ok((
                 StatusCode::CREATED,
                 Json(UploadUrlResponse {
@@ -163,14 +179,14 @@ pub async fn request_upload(
                     skip_upload: archive_exists,
                 }),
             ))
-        }
+        },
         Err(e) => {
             tracing::error!("Failed to create upload job: {}", e);
             Err((
                 StatusCode::INTERNAL_SERVER_ERROR,
                 Json(ApiError::new(e.to_string(), "database_error")),
             ))
-        }
+        },
     }
 }
 
@@ -192,33 +208,39 @@ pub async fn start_job(
                     stream_url,
                 }));
             }
-            
+
             if job.status != JobStatus::Pending {
                 return Err((
                     StatusCode::BAD_REQUEST,
                     Json(ApiError::new(
-                        format!("Job is in {:?} status, expected pending or running", job.status),
-                        "invalid_state"
+                        format!(
+                            "Job is in {:?} status, expected pending or running",
+                            job.status
+                        ),
+                        "invalid_state",
                     )),
                 ));
             }
-            
+
             // Create log stream
             state.create_log_stream(job.id).await;
-            
+
             let stream_url = format!("{}/api/v1/jobs/{}/logs", state.config.base_url, job.id);
-            
+
             tracing::info!(job_id = %job.id, "Job started, ready for worker pickup");
-            
+
             Ok(Json(CreateJobResponse {
                 job_id: job.id,
                 status: job.status,
                 stream_url,
             }))
-        }
+        },
         Ok(None) => Err((
             StatusCode::NOT_FOUND,
-            Json(ApiError::new(format!("Job {} not found", job_id), "job_not_found")),
+            Json(ApiError::new(
+                format!("Job {} not found", job_id),
+                "job_not_found",
+            )),
         )),
         Err(e) => {
             tracing::error!("Failed to get job: {}", e);
@@ -226,7 +248,7 @@ pub async fn start_job(
                 StatusCode::INTERNAL_SERVER_ERROR,
                 Json(ApiError::new(e.to_string(), "database_error")),
             ))
-        }
+        },
     }
 }
 
@@ -245,8 +267,12 @@ pub async fn list_jobs(
     axum::extract::Query(query): axum::extract::Query<ListJobsQuery>,
 ) -> Result<Json<Vec<Job>>, (StatusCode, Json<ApiError>)> {
     let limit = query.limit.unwrap_or(20).min(100); // Cap at 100
-    
-    match state.supabase.list_jobs(query.status.as_deref(), limit).await {
+
+    match state
+        .supabase
+        .list_jobs(query.status.as_deref(), limit)
+        .await
+    {
         Ok(jobs) => Ok(Json(jobs)),
         Err(e) => {
             tracing::error!("Failed to list jobs: {}", e);
@@ -254,7 +280,7 @@ pub async fn list_jobs(
                 StatusCode::INTERNAL_SERVER_ERROR,
                 Json(ApiError::new(e.to_string(), "database_error")),
             ))
-        }
+        },
     }
 }
 
@@ -267,7 +293,10 @@ pub async fn get_job(
         Ok(Some(job)) => Ok(Json(job)),
         Ok(None) => Err((
             StatusCode::NOT_FOUND,
-            Json(ApiError::new(format!("Job {} not found", job_id), "job_not_found")),
+            Json(ApiError::new(
+                format!("Job {} not found", job_id),
+                "job_not_found",
+            )),
         )),
         Err(e) => {
             tracing::error!("Failed to get job: {}", e);
@@ -275,7 +304,7 @@ pub async fn get_job(
                 StatusCode::INTERNAL_SERVER_ERROR,
                 Json(ApiError::new(e.to_string(), "database_error")),
             ))
-        }
+        },
     }
 }
 
@@ -292,7 +321,7 @@ pub async fn get_artifacts(
                 StatusCode::INTERNAL_SERVER_ERROR,
                 Json(ApiError::new(e.to_string(), "database_error")),
             ))
-        }
+        },
     }
 }
 
@@ -303,38 +332,53 @@ pub async fn upload_archive(
     body: axum::body::Bytes,
 ) -> Result<StatusCode, (StatusCode, Json<ApiError>)> {
     // Get the job to find the correct storage path from source_url
-    let job = state.supabase.get_job(job_id).await
+    let job = state
+        .supabase
+        .get_job(job_id)
+        .await
         .map_err(|e| {
             tracing::error!("Failed to get job for upload: {}", e);
-            (StatusCode::INTERNAL_SERVER_ERROR, Json(ApiError::new(e.to_string(), "database_error")))
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(ApiError::new(e.to_string(), "database_error")),
+            )
         })?
         .ok_or_else(|| {
-            (StatusCode::NOT_FOUND, Json(ApiError::new("Job not found", "job_not_found")))
+            (
+                StatusCode::NOT_FOUND,
+                Json(ApiError::new("Job not found", "job_not_found")),
+            )
         })?;
-    
+
     // Extract storage path from source_url (e.g., "https://...supabase.co/storage/v1/object/public/sources/abc123.zip")
-    let source_url = job.source_url
-        .ok_or_else(|| (StatusCode::BAD_REQUEST, Json(ApiError::new("Job has no source URL", "no_source_url"))))?;
-    
+    let source_url = job.source_url.ok_or_else(|| {
+        (
+            StatusCode::BAD_REQUEST,
+            Json(ApiError::new("Job has no source URL", "no_source_url")),
+        )
+    })?;
+
     // Extract the path after "/public/" or use job_id as fallback
     let upload_path = source_url
         .split("/object/public/")
         .nth(1)
         .unwrap_or(&format!("sources/{}.zip", job_id))
         .to_string();
-    
+
     // Proxy upload to Supabase Storage
     let storage_url = format!(
         "{}/storage/v1/object/{}",
-        state.config.supabase_url,
-        upload_path
+        state.config.supabase_url, upload_path
     );
-    
+
     let client = reqwest::Client::new();
     let response = client
         .put(&storage_url)
         .header("apikey", &state.config.supabase_key)
-        .header("Authorization", format!("Bearer {}", state.config.supabase_key))
+        .header(
+            "Authorization",
+            format!("Bearer {}", state.config.supabase_key),
+        )
         .header("Content-Type", "application/zip")
         .body(body.to_vec())
         .send()
@@ -368,15 +412,23 @@ pub async fn upload_artifact(
 ) -> Result<String, (StatusCode, Json<ApiError>)> {
     // 1. Validate job exists (optional but good practice)
     if let Err(e) = state.supabase.get_job(job_id).await {
-         tracing::error!("Failed to check job existence: {}", e);
-         return Err((
-             StatusCode::INTERNAL_SERVER_ERROR,
-             Json(ApiError::new(e.to_string(), "database_error")),
-         ));
+        tracing::error!("Failed to check job existence: {}", e);
+        return Err((
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(ApiError::new(e.to_string(), "database_error")),
+        ));
     }
 
     // 2. Upload to Supabase Storage (streaming)
-    match state.supabase.upload_artifact_file(job_id, &filename, reqwest::Body::wrap_stream(body.into_data_stream())).await {
+    match state
+        .supabase
+        .upload_artifact_file(
+            job_id,
+            &filename,
+            reqwest::Body::wrap_stream(body.into_data_stream()),
+        )
+        .await
+    {
         Ok(public_url) => {
             tracing::info!(job_id = %job_id, filename = %filename, "Artifact uploaded");
             Ok(public_url)
@@ -387,7 +439,7 @@ pub async fn upload_artifact(
                 StatusCode::INTERNAL_SERVER_ERROR,
                 Json(ApiError::new(e.to_string(), "upload_failed")),
             ))
-        }
+        },
     }
 }
 
@@ -409,25 +461,32 @@ pub async fn cancel_job(
                     )),
                 ));
             }
-            
+
             // Update job status to cancelled
-            match state.supabase.update_job_status(job_id, JobStatus::Cancelled).await {
+            match state
+                .supabase
+                .update_job_status(job_id, JobStatus::Cancelled)
+                .await
+            {
                 Ok(_) => {
                     tracing::info!(job_id = %job_id, "Job cancelled");
                     Ok(StatusCode::OK)
-                }
+                },
                 Err(e) => {
                     tracing::error!("Failed to cancel job: {}", e);
                     Err((
                         StatusCode::INTERNAL_SERVER_ERROR,
                         Json(ApiError::new(e.to_string(), "database_error")),
                     ))
-                }
+                },
             }
-        }
+        },
         Ok(None) => Err((
             StatusCode::NOT_FOUND,
-            Json(ApiError::new(format!("Job {} not found", job_id), "job_not_found")),
+            Json(ApiError::new(
+                format!("Job {} not found", job_id),
+                "job_not_found",
+            )),
         )),
         Err(e) => {
             tracing::error!("Failed to get job: {}", e);
@@ -435,7 +494,7 @@ pub async fn cancel_job(
                 StatusCode::INTERNAL_SERVER_ERROR,
                 Json(ApiError::new(e.to_string(), "database_error")),
             ))
-        }
+        },
     }
 }
 
@@ -459,12 +518,15 @@ pub async fn retry_job(
                 return Err((
                     StatusCode::BAD_REQUEST,
                     Json(ApiError::new(
-                        format!("Cannot retry job in {} status (only failed/cancelled)", original.status),
+                        format!(
+                            "Cannot retry job in {} status (only failed/cancelled)",
+                            original.status
+                        ),
                         "invalid_state",
                     )),
                 ));
             }
-            
+
             // Create new job with same parameters
             let mut new_job = if let Some(ref script) = original.script {
                 Job::with_script(
@@ -483,13 +545,16 @@ pub async fn retry_job(
             } else {
                 return Err((
                     StatusCode::BAD_REQUEST,
-                    Json(ApiError::new("Original job has no command or script", "invalid_job")),
+                    Json(ApiError::new(
+                        "Original job has no command or script",
+                        "invalid_job",
+                    )),
                 ));
             };
-            
+
             // Set status to pending so it gets picked up
             new_job.status = JobStatus::Pending;
-            
+
             match state.supabase.create_job(&new_job).await {
                 Ok(_) => {
                     tracing::info!(new_job_id = %new_job.id, original_job_id = %job_id, "Job retried");
@@ -500,19 +565,22 @@ pub async fn retry_job(
                             original_job_id: job_id,
                         }),
                     ))
-                }
+                },
                 Err(e) => {
                     tracing::error!("Failed to create retry job: {}", e);
                     Err((
                         StatusCode::INTERNAL_SERVER_ERROR,
                         Json(ApiError::new(e.to_string(), "database_error")),
                     ))
-                }
+                },
             }
-        }
+        },
         Ok(None) => Err((
             StatusCode::NOT_FOUND,
-            Json(ApiError::new(format!("Job {} not found", job_id), "job_not_found")),
+            Json(ApiError::new(
+                format!("Job {} not found", job_id),
+                "job_not_found",
+            )),
         )),
         Err(e) => {
             tracing::error!("Failed to get job: {}", e);
@@ -520,6 +588,6 @@ pub async fn retry_job(
                 StatusCode::INTERNAL_SERVER_ERROR,
                 Json(ApiError::new(e.to_string(), "database_error")),
             ))
-        }
+        },
     }
 }

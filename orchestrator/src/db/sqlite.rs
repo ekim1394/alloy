@@ -1,5 +1,5 @@
 //! SQLite database backend for self-hosted deployments
-//! 
+//!
 //! Note: Billing/subscription features are only available in cloud mode (Supabase).
 //! Self-hosted SQLite mode has no usage limits.
 
@@ -9,8 +9,8 @@ use chrono::Utc;
 use sqlx::{sqlite::SqlitePoolOptions, Pool, Sqlite};
 use uuid::Uuid;
 
-use shared::{Artifact, Job, JobStatus, SourceType, WorkerInfo};
 use super::{ApiKeyInfo, ApiKeyRecord, Database};
+use shared::{Artifact, Job, JobStatus, SourceType, WorkerInfo};
 
 /// SQLite database implementation
 #[derive(Clone)]
@@ -33,7 +33,7 @@ impl SqliteDb {
 
         let db = Self { pool };
         db.run_migrations().await?;
-        
+
         Ok(db)
     }
 
@@ -159,12 +159,10 @@ impl Database for SqliteDb {
     }
 
     async fn get_job(&self, job_id: Uuid) -> Result<Option<Job>> {
-        let row = sqlx::query_as::<_, JobRow>(
-            "SELECT * FROM jobs WHERE id = ?"
-        )
-        .bind(job_id.to_string())
-        .fetch_optional(&self.pool)
-        .await?;
+        let row = sqlx::query_as::<_, JobRow>("SELECT * FROM jobs WHERE id = ?")
+            .bind(job_id.to_string())
+            .fetch_optional(&self.pool)
+            .await?;
 
         Ok(row.map(|r| r.into()))
     }
@@ -244,12 +242,10 @@ impl Database for SqliteDb {
     }
 
     async fn get_job_artifacts(&self, job_id: Uuid) -> Result<Vec<Artifact>> {
-        let rows = sqlx::query_as::<_, ArtifactRow>(
-            "SELECT * FROM artifacts WHERE job_id = ?"
-        )
-        .bind(job_id.to_string())
-        .fetch_all(&self.pool)
-        .await?;
+        let rows = sqlx::query_as::<_, ArtifactRow>("SELECT * FROM artifacts WHERE job_id = ?")
+            .bind(job_id.to_string())
+            .fetch_all(&self.pool)
+            .await?;
 
         Ok(rows.into_iter().map(|r| r.into()).collect())
     }
@@ -274,12 +270,10 @@ impl Database for SqliteDb {
     }
 
     async fn verify_api_key(&self, key_hash: &str) -> Result<Option<ApiKeyRecord>> {
-        let row = sqlx::query_as::<_, ApiKeyRow>(
-            "SELECT * FROM api_keys WHERE key_hash = ?"
-        )
-        .bind(key_hash)
-        .fetch_optional(&self.pool)
-        .await?;
+        let row = sqlx::query_as::<_, ApiKeyRow>("SELECT * FROM api_keys WHERE key_hash = ?")
+            .bind(key_hash)
+            .fetch_optional(&self.pool)
+            .await?;
 
         Ok(row.map(|r| r.into()))
     }
@@ -296,7 +290,7 @@ impl Database for SqliteDb {
 
     async fn create_api_key(&self, user_id: Uuid, name: &str, key_hash: &str) -> Result<Uuid> {
         let key_id = Uuid::new_v4();
-        
+
         sqlx::query(
             r#"
             INSERT INTO api_keys (id, user_id, name, key_hash, created_at)
@@ -316,7 +310,7 @@ impl Database for SqliteDb {
 
     async fn list_api_keys(&self, user_id: Uuid) -> Result<Vec<ApiKeyInfo>> {
         let rows = sqlx::query_as::<_, ApiKeyInfoRow>(
-            "SELECT id, name, created_at, last_used_at FROM api_keys WHERE user_id = ?"
+            "SELECT id, name, created_at, last_used_at FROM api_keys WHERE user_id = ?",
         )
         .bind(user_id.to_string())
         .fetch_all(&self.pool)
@@ -334,16 +328,15 @@ impl Database for SqliteDb {
 
         Ok(result.rows_affected() > 0)
     }
-    
+
     async fn verify_user(&self, email: &str, password: &str) -> Result<Option<Uuid>> {
         // Fetch the stored hash for the user
-        let result: Option<(String, String)> = sqlx::query_as(
-            "SELECT id, password_hash FROM users WHERE email = ?"
-        )
-        .bind(email)
-        .fetch_optional(&self.pool)
-        .await?;
-        
+        let result: Option<(String, String)> =
+            sqlx::query_as("SELECT id, password_hash FROM users WHERE email = ?")
+                .bind(email)
+                .fetch_optional(&self.pool)
+                .await?;
+
         match result {
             Some((id, stored_hash)) => {
                 // Verify password using Argon2
@@ -352,29 +345,26 @@ impl Database for SqliteDb {
                 } else {
                     Ok(None)
                 }
-            }
+            },
             None => Ok(None),
         }
     }
-    
+
     async fn create_user(&self, email: &str, password_hash: &str) -> Result<Uuid> {
         let user_id = Uuid::new_v4();
         let now = Utc::now().to_rfc3339();
-        
-        sqlx::query(
-            "INSERT INTO users (id, email, password_hash, created_at) VALUES (?, ?, ?, ?)"
-        )
-        .bind(user_id.to_string())
-        .bind(email)
-        .bind(password_hash)
-        .bind(now)
-        .execute(&self.pool)
-        .await?;
-        
+
+        sqlx::query("INSERT INTO users (id, email, password_hash, created_at) VALUES (?, ?, ?, ?)")
+            .bind(user_id.to_string())
+            .bind(email)
+            .bind(password_hash)
+            .bind(now)
+            .execute(&self.pool)
+            .await?;
+
         Ok(user_id)
     }
 }
-
 
 // Row types for SQLx
 #[derive(sqlx::FromRow)]

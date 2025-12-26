@@ -8,11 +8,11 @@ use axum::{
 use chrono::Utc;
 use uuid::Uuid;
 
-use shared::{
-    ApiError, ClaimJobRequest, Job, JobResult, JobStatus, 
-    RegisterWorkerRequest, RegisterWorkerResponse, WorkerHeartbeat, WorkerInfo, WorkerStatus,
-};
 use crate::state::AppState;
+use shared::{
+    ApiError, ClaimJobRequest, Job, JobResult, JobStatus, RegisterWorkerRequest,
+    RegisterWorkerResponse, WorkerHeartbeat, WorkerInfo, WorkerStatus,
+};
 
 /// POST /api/v1/workers/register - Register a new worker
 pub async fn register_worker(
@@ -21,7 +21,7 @@ pub async fn register_worker(
 ) -> Result<(StatusCode, Json<RegisterWorkerResponse>), (StatusCode, Json<ApiError>)> {
     let worker_id = Uuid::new_v4();
     let token = Uuid::new_v4().to_string(); // Simple token for now
-    
+
     let worker = WorkerInfo {
         id: worker_id,
         hostname: request.hostname.clone(),
@@ -30,17 +30,21 @@ pub async fn register_worker(
         last_heartbeat: Utc::now(),
         status: WorkerStatus::Online,
     };
-    
+
     // Store in memory cache
-    state.workers.write().await.insert(worker_id, worker.clone());
-    
+    state
+        .workers
+        .write()
+        .await
+        .insert(worker_id, worker.clone());
+
     // Also persist to Supabase
     if let Err(e) = state.supabase.register_worker(&worker).await {
         tracing::warn!("Failed to persist worker to DB: {}", e);
     }
-    
+
     tracing::info!(worker_id = %worker_id, hostname = %request.hostname, "Worker registered");
-    
+
     Ok((
         StatusCode::CREATED,
         Json(RegisterWorkerResponse { worker_id, token }),
@@ -53,7 +57,7 @@ pub async fn heartbeat(
     Json(request): Json<WorkerHeartbeat>,
 ) -> Result<StatusCode, (StatusCode, Json<ApiError>)> {
     let mut workers = state.workers.write().await;
-    
+
     if let Some(worker) = workers.get_mut(&request.worker_id) {
         worker.last_heartbeat = Utc::now();
         worker.current_jobs = request.current_jobs;
@@ -86,14 +90,14 @@ pub async fn claim_job(
                 tracing::info!(job_id = %j.id, worker_id = %request.worker_id, "Job claimed");
             }
             Ok(Json(job))
-        }
+        },
         Err(e) => {
             tracing::error!("Failed to claim job: {}", e);
             Err((
                 StatusCode::INTERNAL_SERVER_ERROR,
                 Json(ApiError::new(e.to_string(), "database_error")),
             ))
-        }
+        },
     }
 }
 
@@ -109,8 +113,17 @@ pub async fn complete_job(
     } else {
         JobStatus::Failed
     };
-    
-    match state.supabase.complete_job(result.job_id, status.clone(), result.exit_code, result.build_minutes).await {
+
+    match state
+        .supabase
+        .complete_job(
+            result.job_id,
+            status.clone(),
+            result.exit_code,
+            result.build_minutes,
+        )
+        .await
+    {
         Ok(_) => {
             // Send completion message via log stream before closing
             if let Some(tx) = state.get_log_stream(result.job_id).await {
@@ -124,32 +137,36 @@ pub async fn complete_job(
                 });
                 let _ = tx.send(completion_msg.to_string());
             }
-            
+
             // Clean up log stream
             state.remove_log_stream(result.job_id).await;
-            
+
             // Upload artifacts if any
             for artifact in result.artifacts {
-                if let Err(e) = state.supabase.store_artifact(result.job_id, &artifact).await {
+                if let Err(e) = state
+                    .supabase
+                    .store_artifact(result.job_id, &artifact)
+                    .await
+                {
                     tracing::warn!("Failed to store artifact: {}", e);
                 }
             }
-            
+
             tracing::info!(
                 job_id = %result.job_id,
                 worker_id = %worker_id,
                 exit_code = result.exit_code,
                 "Job completed"
             );
-            
+
             Ok(StatusCode::OK)
-        }
+        },
         Err(e) => {
             tracing::error!("Failed to complete job: {}", e);
             Err((
                 StatusCode::INTERNAL_SERVER_ERROR,
                 Json(ApiError::new(e.to_string(), "database_error")),
             ))
-        }
+        },
     }
 }

@@ -1,14 +1,14 @@
 //! Application state shared across handlers
 
+use anyhow::Result;
+use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::RwLock;
-use std::collections::HashMap;
 use uuid::Uuid;
-use anyhow::Result;
 
-use shared::WorkerInfo;
 use crate::config::Config;
 use crate::services::SupabaseClient;
+use shared::WorkerInfo;
 
 /// Shared application state
 #[derive(Clone)]
@@ -26,7 +26,7 @@ pub struct AppState {
 impl AppState {
     pub async fn new(config: Config) -> Result<Self> {
         let supabase = SupabaseClient::new(&config.supabase_url, &config.supabase_key);
-        
+
         Ok(Self {
             config,
             supabase,
@@ -35,19 +35,22 @@ impl AppState {
             log_streams: Arc::new(RwLock::new(HashMap::new())),
         })
     }
-    
+
     /// Create a new log stream for a job
     pub async fn create_log_stream(&self, job_id: Uuid) -> tokio::sync::broadcast::Sender<String> {
         let (tx, _) = tokio::sync::broadcast::channel(1000);
         self.log_streams.write().await.insert(job_id, tx.clone());
         tx
     }
-    
+
     /// Get an existing log stream for a job
-    pub async fn get_log_stream(&self, job_id: Uuid) -> Option<tokio::sync::broadcast::Sender<String>> {
+    pub async fn get_log_stream(
+        &self,
+        job_id: Uuid,
+    ) -> Option<tokio::sync::broadcast::Sender<String>> {
         self.log_streams.read().await.get(&job_id).cloned()
     }
-    
+
     /// Remove a log stream when job completes
     pub async fn remove_log_stream(&self, job_id: Uuid) {
         self.log_streams.write().await.remove(&job_id);

@@ -48,7 +48,12 @@ pub struct Job {
 
 impl Job {
     /// Create a new job with a command
-    pub fn with_command(customer_id: Uuid, command: String, source_type: SourceType, source_url: Option<String>) -> Self {
+    pub fn with_command(
+        customer_id: Uuid,
+        command: String,
+        source_type: SourceType,
+        source_url: Option<String>,
+    ) -> Self {
         Self {
             id: Uuid::new_v4(),
             customer_id,
@@ -67,7 +72,12 @@ impl Job {
     }
 
     /// Create a new job with a script
-    pub fn with_script(customer_id: Uuid, script: String, source_type: SourceType, source_url: Option<String>) -> Self {
+    pub fn with_script(
+        customer_id: Uuid,
+        script: String,
+        source_type: SourceType,
+        source_url: Option<String>,
+    ) -> Self {
         Self {
             id: Uuid::new_v4(),
             customer_id,
@@ -270,7 +280,7 @@ impl SubscriptionPlan {
     /// Monthly price in cents
     pub fn price_cents(&self) -> u32 {
         match self {
-            SubscriptionPlan::Pro => 2000,  // $20
+            SubscriptionPlan::Pro => 2000,   // $20
             SubscriptionPlan::Team => 20000, // $200
         }
     }
@@ -400,7 +410,7 @@ impl Subscription {
         if self.is_trial_expired() {
             return false;
         }
-        
+
         match self.plan {
             SubscriptionPlan::Team => true, // Unlimited
             SubscriptionPlan::Pro => true,  // Pro has metered billing
@@ -414,7 +424,7 @@ impl Subscription {
             SubscriptionPlan::Pro => {
                 let included = self.minutes_included.unwrap_or(300) as f64;
                 Some((included - self.minutes_used).max(0.0))
-            }
+            },
         }
     }
 

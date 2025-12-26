@@ -35,7 +35,7 @@ pub fn create_archive(source_dir: &Path) -> Result<Vec<u8>> {
     }
 
     let mut buffer = Vec::new();
-    
+
     {
         let cursor = std::io::Cursor::new(&mut buffer);
         let mut zip = ZipWriter::new(cursor);
@@ -54,10 +54,10 @@ pub fn create_archive(source_dir: &Path) -> Result<Vec<u8>> {
                 zip.write_all(&contents)?;
             }
         }
-        
+
         zip.finish()?;
     }
-    
+
     Ok(buffer)
 }
 
@@ -80,7 +80,7 @@ pub fn format_size(bytes: usize) -> String {
     const KB: usize = 1024;
     const MB: usize = KB * 1024;
     const GB: usize = MB * 1024;
-    
+
     if bytes >= GB {
         format!("{:.2} GB", bytes as f64 / GB as f64)
     } else if bytes >= MB {
@@ -91,4 +91,3 @@ pub fn format_size(bytes: usize) -> String {
         format!("{} bytes", bytes)
     }
 }
-

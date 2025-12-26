@@ -34,26 +34,26 @@ mod tests {
     fn test_password_hashing() {
         let password = "my_secure_password";
         let hash = hash_password(password).unwrap();
-        
+
         // Hash should be in PHC format
         assert!(hash.starts_with("$argon2"));
-        
+
         // Verification should work
         assert!(verify_password(password, &hash));
-        
+
         // Wrong password should fail
         assert!(!verify_password("wrong_password", &hash));
     }
-    
+
     #[test]
     fn test_different_hashes_each_time() {
         let password = "test_password";
         let hash1 = hash_password(password).unwrap();
         let hash2 = hash_password(password).unwrap();
-        
+
         // Each hash should be different (due to random salt)
         assert_ne!(hash1, hash2);
-        
+
         // But both should verify
         assert!(verify_password(password, &hash1));
         assert!(verify_password(password, &hash2));

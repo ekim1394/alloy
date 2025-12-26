@@ -47,12 +47,11 @@ pub trait Database: Send + Sync + Clone {
     async fn create_api_key(&self, user_id: Uuid, name: &str, key_hash: &str) -> Result<Uuid>;
     async fn list_api_keys(&self, user_id: Uuid) -> Result<Vec<ApiKeyInfo>>;
     async fn delete_api_key(&self, user_id: Uuid, key_id: Uuid) -> Result<bool>;
-    
+
     // User operations
     async fn verify_user(&self, email: &str, password: &str) -> Result<Option<Uuid>>;
     async fn create_user(&self, email: &str, password_hash: &str) -> Result<Uuid>;
 }
-
 
 /// API key record from database
 #[derive(Debug, Clone)]
@@ -78,28 +77,18 @@ pub struct ApiKeyInfo {
 #[derive(Debug, Clone)]
 pub enum DatabaseBackend {
     /// Supabase (cloud)
-    Supabase {
-        url: String,
-        key: String,
-    },
+    Supabase { url: String, key: String },
     /// SQLite (self-hosted, simple)
-    Sqlite {
-        path: String,
-    },
+    Sqlite { path: String },
     /// PostgreSQL (self-hosted, production)
-    Postgres {
-        url: String,
-    },
+    Postgres { url: String },
 }
 
 impl DatabaseBackend {
     /// Create from environment configuration
     pub fn from_env() -> Result<Self> {
         // Check for Supabase first
-        if let (Ok(url), Ok(key)) = (
-            std::env::var("SUPABASE_URL"),
-            std::env::var("SUPABASE_KEY"),
-        ) {
+        if let (Ok(url), Ok(key)) = (std::env::var("SUPABASE_URL"), std::env::var("SUPABASE_KEY")) {
             return Ok(Self::Supabase { url, key });
         }
 
@@ -111,9 +100,9 @@ impl DatabaseBackend {
         }
 
         // Default to SQLite
-        let path = std::env::var("SQLITE_PATH")
-            .unwrap_or_else(|_| "data/jules-mac-runner.db".to_string());
-        
+        let path =
+            std::env::var("SQLITE_PATH").unwrap_or_else(|_| "data/jules-mac-runner.db".to_string());
+
         Ok(Self::Sqlite { path })
     }
 }

@@ -12,8 +12,8 @@ use axum::{
 use futures_util::{SinkExt, StreamExt};
 use uuid::Uuid;
 
-use shared::{ApiError, LogEntry};
 use crate::state::AppState;
+use shared::{ApiError, LogEntry};
 
 /// GET /api/v1/jobs/:job_id/logs - Stream logs via WebSocket
 pub async fn stream_logs(
@@ -26,23 +26,26 @@ pub async fn stream_logs(
 
 async fn handle_log_stream(socket: WebSocket, state: AppState, job_id: Uuid) {
     let (mut sender, mut receiver) = socket.split();
-    
+
     // Get or wait for the log stream for this job
     let log_tx = match state.get_log_stream(job_id).await {
         Some(tx) => tx,
         None => {
             // Job might not exist or already completed
-            let _ = sender.send(Message::Text(
-                serde_json::to_string(&serde_json::json!({
-                    "error": "Job not found or already completed"
-                })).unwrap()
-            )).await;
+            let _ = sender
+                .send(Message::Text(
+                    serde_json::to_string(&serde_json::json!({
+                        "error": "Job not found or already completed"
+                    }))
+                    .unwrap(),
+                ))
+                .await;
             return;
-        }
+        },
     };
-    
+
     let mut log_rx = log_tx.subscribe();
-    
+
     // Spawn task to forward logs to client
     let send_task = tokio::spawn(async move {
         while let Ok(log) = log_rx.recv().await {
@@ -51,16 +54,16 @@ async fn handle_log_stream(socket: WebSocket, state: AppState, job_id: Uuid) {
             }
         }
     });
-    
+
     // Handle incoming messages (like close)
     while let Some(msg) = receiver.next().await {
         match msg {
             Ok(Message::Close(_)) => break,
             Err(_) => break,
-            _ => {}
+            _ => {},
         }
     }
-    
+
     send_task.abort();
 }
 
@@ -111,13 +114,13 @@ pub async fn get_stored_logs(
                     }
                 })
                 .collect();
-            
+
             Ok(Json(logs))
-        }
+        },
         Err(_) => {
             // If file not found, return empty list (job might be running or failed before logs uploaded)
             Ok(Json(vec![]))
-        }
+        },
     }
 }
 
@@ -135,6 +138,6 @@ pub async fn upload_logs(
                 StatusCode::INTERNAL_SERVER_ERROR,
                 Json(ApiError::new(e.to_string(), "upload_error")),
             ))
-        }
+        },
     }
 }

@@ -1,84 +1,86 @@
-import { useState, useEffect } from 'react'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { useSearchParams } from 'react-router-dom'
-import { Key, CreditCard, Copy, Trash2, Terminal, CheckCircle2, XCircle } from 'lucide-react'
-import { fetchApiKeys, createApiKey, deleteApiKey } from '../lib/api'
-import BillingSettings from '../components/BillingSettings'
-import type { ApiKey } from '../types'
+import { useState, useEffect } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useSearchParams } from 'react-router-dom';
+import { Key, CreditCard, Copy, Trash2, Terminal, CheckCircle2, XCircle } from 'lucide-react';
+import { fetchApiKeys, createApiKey, deleteApiKey } from '../lib/api';
+import BillingSettings from '../components/BillingSettings';
+import type { ApiKey } from '../types';
 
 function Settings() {
-  const [searchParams] = useSearchParams()
-  const [activeTab, setActiveTab] = useState<'general' | 'billing'>('general')
-  const queryClient = useQueryClient()
-  const [newKeyName, setNewKeyName] = useState('')
-  const [createdKey, setCreatedKey] = useState<string | null>(null)
+  const [searchParams] = useSearchParams();
+  const [activeTab, setActiveTab] = useState<'general' | 'billing'>('general');
+  const queryClient = useQueryClient();
+  const [newKeyName, setNewKeyName] = useState('');
+  const [createdKey, setCreatedKey] = useState<string | null>(null);
 
   // Switch to billing tab if returned from checkout or requested via tab param
   useEffect(() => {
-    const tab = searchParams.get('tab')
-    const checkout = searchParams.get('checkout')
-    
+    const tab = searchParams.get('tab');
+    const checkout = searchParams.get('checkout');
+
     if (tab === 'billing' || checkout) {
-      setActiveTab('billing')
+      setActiveTab('billing');
     }
-  }, [searchParams])
+  }, [searchParams]);
 
   // Fetch API keys
   const { data: apiKeys = [], isLoading } = useQuery<ApiKey[]>({
     queryKey: ['apiKeys'],
     queryFn: fetchApiKeys,
     enabled: activeTab === 'general',
-  })
+  });
 
   // Create API key mutation
   const createMutation = useMutation({
     mutationFn: (name: string) => createApiKey(name),
     onSuccess: (data) => {
-      setCreatedKey(data.key)
-      setNewKeyName('')
-      queryClient.invalidateQueries({ queryKey: ['apiKeys'] })
+      setCreatedKey(data.key);
+      setNewKeyName('');
+      queryClient.invalidateQueries({ queryKey: ['apiKeys'] });
     },
-  })
+  });
 
   // Delete API key mutation
   const deleteMutation = useMutation({
     mutationFn: (keyId: string) => deleteApiKey(keyId),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['apiKeys'] })
+      queryClient.invalidateQueries({ queryKey: ['apiKeys'] });
     },
-  })
+  });
 
   const handleCreateKey = (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!newKeyName.trim()) return
-    createMutation.mutate(newKeyName)
-  }
+    e.preventDefault();
+    if (!newKeyName.trim()) return;
+    createMutation.mutate(newKeyName);
+  };
 
   const handleDeleteKey = (id: string) => {
-    if (!confirm('Are you sure you want to delete this API key?')) return
-    deleteMutation.mutate(id)
-  }
+    if (!confirm('Are you sure you want to delete this API key?')) return;
+    deleteMutation.mutate(id);
+  };
 
   return (
     <div className="max-w-4xl mx-auto">
       <div className="flex justify-between items-center mb-8">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Settings</h1>
-          <p className="text-base-content/60 mt-1 font-medium">Manage your account preferences and API access.</p>
+          <p className="text-base-content/60 mt-1 font-medium">
+            Manage your account preferences and API access.
+          </p>
         </div>
       </div>
 
       <div role="tablist" className="tabs tabs-boxed bg-base-200/50 p-1 mb-8 w-fit">
-        <a 
-          role="tab" 
+        <a
+          role="tab"
           className={`tab px-6 ${activeTab === 'general' ? 'tab-active shadow-md' : ''}`}
           onClick={() => setActiveTab('general')}
         >
           <Key size={16} className="mr-2" />
           General
         </a>
-        <a 
-          role="tab" 
+        <a
+          role="tab"
           className={`tab px-6 ${activeTab === 'billing' ? 'tab-active shadow-md' : ''}`}
           onClick={() => setActiveTab('billing')}
         >
@@ -104,8 +106,8 @@ function Settings() {
                   className="input input-bordered input-sm flex-1 h-10"
                   disabled={createMutation.isPending}
                 />
-                <button 
-                  type="submit" 
+                <button
+                  type="submit"
                   className="btn btn-primary btn-sm h-10 px-6"
                   disabled={createMutation.isPending}
                 >
@@ -139,10 +141,10 @@ function Settings() {
 
             <div className="mb-8">
               <h3 className="text-lg font-bold mb-4">Your API Keys</h3>
-              
+
               {isLoading ? (
                 <div className="flex justify-center p-8">
-                   <span className="loading loading-spinner loading-md text-primary"></span>
+                  <span className="loading loading-spinner loading-md text-primary"></span>
                 </div>
               ) : apiKeys.length === 0 ? (
                 <div className="text-center p-8 border-2 border-dashed border-base-200 rounded-xl">
@@ -170,14 +172,13 @@ function Settings() {
                             {new Date(key.created_at).toLocaleDateString()}
                           </td>
                           <td className="text-base-content/70 text-sm">
-                            {key.last_used_at 
+                            {key.last_used_at
                               ? new Date(key.last_used_at).toLocaleDateString()
-                              : 'Never'
-                            }
+                              : 'Never'}
                           </td>
                           <td className="text-right">
-                            <button 
-                              className="btn btn-ghost btn-sm btn-square text-error hover:bg-error/10" 
+                            <button
+                              className="btn btn-ghost btn-sm btn-square text-error hover:bg-error/10"
                               onClick={() => handleDeleteKey(key.id)}
                               disabled={deleteMutation.isPending}
                             >
@@ -201,12 +202,16 @@ function Settings() {
                 Add this to your CLI config file to authenticate your runner:
               </p>
               <div className="mockup-code text-sm bg-base-900 border border-base-content/10">
-                <pre data-prefix="$"><code>cat ~/.alloy/config.toml</code></pre> 
-                <pre className="text-success"><code>
-                  {`      
+                <pre data-prefix="$">
+                  <code>cat ~/.alloy/config.toml</code>
+                </pre>
+                <pre className="text-success">
+                  <code>
+                    {`      
         orchestrator_url = "${window.location.origin}"
         api_key = "your-api-key-here"`}
-                </code></pre>
+                  </code>
+                </pre>
               </div>
             </div>
           </div>
@@ -217,7 +222,7 @@ function Settings() {
         )}
       </div>
     </div>
-  )
+  );
 }
 
-export default Settings
+export default Settings;

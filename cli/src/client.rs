@@ -33,8 +33,8 @@ impl AlloyClient {
 
     /// Create a new job with git source
     pub async fn create_job_git(
-        &self, 
-        command: Option<&str>, 
+        &self,
+        command: Option<&str>,
         script: Option<&str>,
         repo_url: &str,
     ) -> Result<CreateJobResponse> {
@@ -42,7 +42,7 @@ impl AlloyClient {
             "source_type": "git",
             "source_url": repo_url,
         });
-        
+
         if let Some(cmd) = command {
             body["command"] = json!(cmd);
         }
@@ -50,7 +50,8 @@ impl AlloyClient {
             body["script"] = json!(scr);
         }
 
-        let request = self.client
+        let request = self
+            .client
             .post(format!("{}/api/v1/jobs", self.base_url))
             .json(&body);
 
@@ -66,13 +67,13 @@ impl AlloyClient {
 
     /// Request an upload URL for local file upload
     pub async fn request_upload_url(
-        &self, 
+        &self,
         command: Option<&str>,
         script: Option<&str>,
         commit_sha: Option<&str>,
     ) -> Result<UploadUrlResponse> {
         let mut body = json!({});
-        
+
         if let Some(cmd) = command {
             body["command"] = json!(cmd);
         }
@@ -83,7 +84,8 @@ impl AlloyClient {
             body["commit_sha"] = json!(sha);
         }
 
-        let request = self.client
+        let request = self
+            .client
             .post(format!("{}/api/v1/jobs/upload", self.base_url))
             .json(&body);
 
@@ -98,9 +100,15 @@ impl AlloyClient {
     }
 
     /// Upload archive to the provided URL with auth token
-    pub async fn upload_archive(&self, upload_url: &str, _upload_token: &str, data: Vec<u8>) -> Result<()> {
+    pub async fn upload_archive(
+        &self,
+        upload_url: &str,
+        _upload_token: &str,
+        data: Vec<u8>,
+    ) -> Result<()> {
         // Upload goes through orchestrator proxy (no auth needed from CLI)
-        let request = self.client
+        let request = self
+            .client
             .put(upload_url)
             .header("Content-Type", "application/zip")
             .body(data);
@@ -117,7 +125,8 @@ impl AlloyClient {
 
     /// Confirm upload and start the job
     pub async fn confirm_upload(&self, job_id: Uuid) -> Result<CreateJobResponse> {
-        let request = self.client
+        let request = self
+            .client
             .post(format!("{}/api/v1/jobs/{}/start", self.base_url, job_id));
 
         let response = self.add_auth(request).send().await?;
@@ -132,7 +141,8 @@ impl AlloyClient {
 
     /// Get job status
     pub async fn get_job(&self, job_id: Uuid) -> Result<Job> {
-        let request = self.client
+        let request = self
+            .client
             .get(format!("{}/api/v1/jobs/{}", self.base_url, job_id));
 
         let response = self.add_auth(request).send().await?;
@@ -147,8 +157,10 @@ impl AlloyClient {
 
     /// Get job artifacts
     pub async fn get_artifacts(&self, job_id: Uuid) -> Result<Vec<Artifact>> {
-        let request = self.client
-            .get(format!("{}/api/v1/jobs/{}/artifacts", self.base_url, job_id));
+        let request = self.client.get(format!(
+            "{}/api/v1/jobs/{}/artifacts",
+            self.base_url, job_id
+        ));
 
         let response = self.add_auth(request).send().await?;
 
@@ -162,7 +174,8 @@ impl AlloyClient {
 
     /// Get the WebSocket URL for log streaming
     pub fn get_stream_url(&self, job_id: Uuid) -> String {
-        let ws_base = self.base_url
+        let ws_base = self
+            .base_url
             .replace("http://", "ws://")
             .replace("https://", "wss://");
         format!("{}/api/v1/jobs/{}/logs", ws_base, job_id)
@@ -170,7 +183,8 @@ impl AlloyClient {
 
     /// Cancel a running job
     pub async fn cancel_job(&self, job_id: Uuid) -> Result<()> {
-        let request = self.client
+        let request = self
+            .client
             .post(format!("{}/api/v1/jobs/{}/cancel", self.base_url, job_id));
 
         let response = self.add_auth(request).send().await?;
@@ -186,7 +200,7 @@ impl AlloyClient {
     /// List recent jobs
     pub async fn list_jobs(&self, status: Option<&str>) -> Result<Vec<Job>> {
         let mut url = format!("{}/api/v1/jobs", self.base_url);
-        
+
         if let Some(s) = status {
             url = format!("{}?status={}", url, s);
         }
@@ -204,7 +218,8 @@ impl AlloyClient {
 
     /// Retry a failed or cancelled job
     pub async fn retry_job(&self, job_id: Uuid) -> Result<Uuid> {
-        let request = self.client
+        let request = self
+            .client
             .post(format!("{}/api/v1/jobs/{}/retry", self.base_url, job_id));
 
         let response = self.add_auth(request).send().await?;

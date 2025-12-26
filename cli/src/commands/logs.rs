@@ -10,16 +10,15 @@ use std::io::stdout;
 use tokio_tungstenite::connect_async;
 use uuid::Uuid;
 
-use shared::LogEntry;
 use crate::client::AlloyClient;
+use shared::LogEntry;
 
 pub async fn execute(client: AlloyClient, job_id: &str) -> Result<()> {
-    let job_id = Uuid::parse_str(job_id)
-        .map_err(|_| anyhow::anyhow!("Invalid job ID format"))?;
+    let job_id = Uuid::parse_str(job_id).map_err(|_| anyhow::anyhow!("Invalid job ID format"))?;
 
     // Get job status first
     let job = client.get_job(job_id).await?;
-    
+
     println!("📺 Streaming logs for job {}...", job_id);
     println!("   Status: {:?}", job.status);
     println!();
@@ -57,15 +56,15 @@ pub async fn execute(client: AlloyClient, job_id: &str) -> Result<()> {
                         break;
                     }
                 }
-            }
+            },
             Ok(tokio_tungstenite::tungstenite::Message::Close(_)) => {
                 break;
-            }
+            },
             Err(e) => {
                 eprintln!("WebSocket error: {}", e);
                 break;
-            }
-            _ => {}
+            },
+            _ => {},
         }
     }
 
@@ -74,7 +73,7 @@ pub async fn execute(client: AlloyClient, job_id: &str) -> Result<()> {
 
     // Get final job status
     let job = client.get_job(job_id).await?;
-    
+
     let (status_icon, status_color) = match job.status {
         shared::JobStatus::Completed => ("✓", Color::Green),
         shared::JobStatus::Failed => ("✗", Color::Red),
@@ -85,7 +84,10 @@ pub async fn execute(client: AlloyClient, job_id: &str) -> Result<()> {
     execute!(
         stdout(),
         SetForegroundColor(status_color),
-        Print(format!("{} Job {} - {:?}\n", status_icon, job.id, job.status)),
+        Print(format!(
+            "{} Job {} - {:?}\n",
+            status_icon, job.id, job.status
+        )),
         ResetColor
     )?;
 

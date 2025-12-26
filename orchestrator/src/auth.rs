@@ -11,8 +11,8 @@ use axum::{
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-use shared::ApiError;
 use crate::state::AppState;
+use shared::ApiError;
 
 /// Authenticated user information extracted from JWT or API key
 #[derive(Debug, Clone)]
@@ -33,7 +33,7 @@ pub enum AuthType {
 /// Claims from Supabase JWT token
 #[derive(Debug, Deserialize)]
 struct JwtClaims {
-    sub: String,  // User ID
+    sub: String, // User ID
     email: Option<String>,
     exp: i64,
 }
@@ -71,11 +71,11 @@ where
             Some(header) if header.starts_with("Bearer ") => {
                 let token = &header[7..];
                 verify_jwt(&state, token).await
-            }
+            },
             Some(header) if header.starts_with("ApiKey ") => {
                 let key = &header[7..];
                 verify_api_key(&state, key).await
-            }
+            },
             _ => Err((
                 StatusCode::UNAUTHORIZED,
                 Json(ApiError::new(
@@ -105,11 +105,11 @@ pub async fn auth_middleware(
         Some(header) if header.starts_with("Bearer ") => {
             let token = &header[7..];
             verify_jwt(&state, token).await?
-        }
+        },
         Some(header) if header.starts_with("ApiKey ") => {
             let key = &header[7..];
             verify_api_key(&state, key).await?
-        }
+        },
         _ => {
             return Err((
                 StatusCode::UNAUTHORIZED,
@@ -118,21 +118,25 @@ pub async fn auth_middleware(
                     "unauthorized",
                 )),
             ));
-        }
+        },
     };
 
     // Insert auth user into request extensions
     request.extensions_mut().insert(auth_user);
-    
+
     Ok(next.run(request).await)
 }
 
 /// Verify Supabase JWT token
-async fn verify_jwt(state: &AppState, token: &str) -> Result<AuthUser, (StatusCode, Json<ApiError>)> {
+async fn verify_jwt(
+    state: &AppState,
+    token: &str,
+) -> Result<AuthUser, (StatusCode, Json<ApiError>)> {
     // Supabase JWTs can be verified by calling the Supabase Auth API
     // or by verifying the signature locally with the JWT secret
-    
-    let response = state.client
+
+    let response = state
+        .client
         .get(format!("{}/auth/v1/user", state.config.supabase_url))
         .header("apikey", &state.config.supabase_key)
         .header("Authorization", format!("Bearer {}", token))
@@ -175,22 +179,25 @@ async fn verify_jwt(state: &AppState, token: &str) -> Result<AuthUser, (StatusCo
 }
 
 /// Verify API key against database
-async fn verify_api_key(state: &AppState, key: &str) -> Result<AuthUser, (StatusCode, Json<ApiError>)> {
+async fn verify_api_key(
+    state: &AppState,
+    key: &str,
+) -> Result<AuthUser, (StatusCode, Json<ApiError>)> {
     // API keys are stored as hashed values in the database
     // We hash the incoming key and compare
     let key_hash = hash_api_key(key);
-    
+
     match state.supabase.verify_api_key(&key_hash).await {
         Ok(Some(record)) => {
             // Update last_used_at
             let _ = state.supabase.update_api_key_usage(record.id).await;
-            
+
             Ok(AuthUser {
                 user_id: record.user_id,
                 email: None,
                 auth_type: AuthType::ApiKey,
             })
-        }
+        },
         Ok(None) => Err((
             StatusCode::UNAUTHORIZED,
             Json(ApiError::new("Invalid API key", "invalid_api_key")),
@@ -201,14 +208,14 @@ async fn verify_api_key(state: &AppState, key: &str) -> Result<AuthUser, (Status
                 StatusCode::INTERNAL_SERVER_ERROR,
                 Json(ApiError::new("Failed to verify API key", "auth_error")),
             ))
-        }
+        },
     }
 }
 
 /// Hash an API key for storage/comparison using SHA-256
 pub fn hash_api_key(key: &str) -> String {
-    use sha2::{Sha256, Digest};
-    
+    use sha2::{Digest, Sha256};
+
     let mut hasher = Sha256::new();
     hasher.update(key.as_bytes());
     format!("{:x}", hasher.finalize())
@@ -261,14 +268,17 @@ pub async fn worker_auth_middleware(
     match provided_secret {
         Some(secret) if constant_time_compare(secret, expected_secret) => {
             Ok(next.run(request).await)
-        }
+        },
         Some(_) => {
             tracing::warn!("Worker authentication failed: invalid secret");
             Err((
                 StatusCode::UNAUTHORIZED,
-                Json(ApiError::new("Invalid worker secret", "invalid_worker_secret")),
+                Json(ApiError::new(
+                    "Invalid worker secret",
+                    "invalid_worker_secret",
+                )),
             ))
-        }
+        },
         None => {
             tracing::warn!("Worker authentication failed: missing X-Worker-Secret header");
             Err((
@@ -278,7 +288,7 @@ pub async fn worker_auth_middleware(
                     "missing_worker_secret",
                 )),
             ))
-        }
+        },
     }
 }
 
@@ -287,7 +297,7 @@ fn constant_time_compare(a: &str, b: &str) -> bool {
     if a.len() != b.len() {
         return false;
     }
-    
+
     let mut result = 0u8;
     for (x, y) in a.bytes().zip(b.bytes()) {
         result |= x ^ y;

@@ -35,7 +35,8 @@ impl SupabaseClient {
 
     /// Create a new job in the database
     pub async fn create_job(&self, job: &Job) -> Result<()> {
-        let response = self.client
+        let response = self
+            .client
             .post(format!("{}/jobs", self.rest_url()))
             .header("apikey", &self.api_key)
             .header("Authorization", format!("Bearer {}", self.api_key))
@@ -64,7 +65,8 @@ impl SupabaseClient {
 
     /// Get a job by ID
     pub async fn get_job(&self, job_id: Uuid) -> Result<Option<Job>> {
-        let response = self.client
+        let response = self
+            .client
             .get(format!("{}/jobs?id=eq.{}", self.rest_url(), job_id))
             .header("apikey", &self.api_key)
             .header("Authorization", format!("Bearer {}", self.api_key))
@@ -87,12 +89,13 @@ impl SupabaseClient {
             self.rest_url(),
             limit
         );
-        
+
         if let Some(status_filter) = status {
             url = format!("{}&status=eq.{}", url, status_filter);
         }
-        
-        let response = self.client
+
+        let response = self
+            .client
             .get(&url)
             .header("apikey", &self.api_key)
             .header("Authorization", format!("Bearer {}", self.api_key))
@@ -110,7 +113,8 @@ impl SupabaseClient {
     /// Claim a pending job for a worker
     pub async fn claim_pending_job(&self, worker_id: Uuid) -> Result<Option<Job>> {
         // Find a pending job
-        let response = self.client
+        let response = self
+            .client
             .get(format!(
                 "{}/jobs?status=eq.pending&order=created_at.asc&limit=1",
                 self.rest_url()
@@ -126,10 +130,11 @@ impl SupabaseClient {
         }
 
         let jobs: Vec<Job> = response.json().await?;
-        
+
         if let Some(job) = jobs.into_iter().next() {
             // Update to running status
-            let update_response = self.client
+            let update_response = self
+                .client
                 .patch(format!("{}/jobs?id=eq.{}", self.rest_url(), job.id))
                 .header("apikey", &self.api_key)
                 .header("Authorization", format!("Bearer {}", self.api_key))
@@ -160,7 +165,8 @@ impl SupabaseClient {
         exit_code: i32,
         build_minutes: f64,
     ) -> Result<()> {
-        let response = self.client
+        let response = self
+            .client
             .patch(format!("{}/jobs?id=eq.{}", self.rest_url(), job_id))
             .header("apikey", &self.api_key)
             .header("Authorization", format!("Bearer {}", self.api_key))
@@ -184,7 +190,8 @@ impl SupabaseClient {
 
     /// Update job status (e.g., for cancellation)
     pub async fn update_job_status(&self, job_id: Uuid, status: JobStatus) -> Result<()> {
-        let response = self.client
+        let response = self
+            .client
             .patch(format!("{}/jobs?id=eq.{}", self.rest_url(), job_id))
             .header("apikey", &self.api_key)
             .header("Authorization", format!("Bearer {}", self.api_key))
@@ -205,7 +212,8 @@ impl SupabaseClient {
 
     /// Create a job log entry
     pub async fn create_job_log(&self, job_id: Uuid, content: String) -> Result<()> {
-        let response = self.client
+        let response = self
+            .client
             .post(format!("{}/job_logs", self.rest_url()))
             .header("apikey", &self.api_key)
             .header("Authorization", format!("Bearer {}", self.api_key))
@@ -228,8 +236,13 @@ impl SupabaseClient {
 
     /// Get logs for a job
     pub async fn get_job_logs(&self, job_id: Uuid) -> Result<Vec<shared::JobLog>> {
-        let response = self.client
-            .get(format!("{}/job_logs?job_id=eq.{}&order=created_at.asc", self.rest_url(), job_id))
+        let response = self
+            .client
+            .get(format!(
+                "{}/job_logs?job_id=eq.{}&order=created_at.asc",
+                self.rest_url(),
+                job_id
+            ))
             .header("apikey", &self.api_key)
             .header("Authorization", format!("Bearer {}", self.api_key))
             .send()
@@ -247,8 +260,9 @@ impl SupabaseClient {
     /// Upload log file to Supabase Storage
     pub async fn upload_log_file(&self, job_id: Uuid, data: Vec<u8>) -> Result<()> {
         let path = format!("logs/{}.log", job_id);
-        
-        let response = self.client
+
+        let response = self
+            .client
             .post(format!("{}/object/{}", self.storage_url(), path))
             .header("apikey", &self.api_key)
             .header("Authorization", format!("Bearer {}", self.api_key))
@@ -268,9 +282,14 @@ impl SupabaseClient {
     /// Download log file from Supabase Storage
     pub async fn download_log_file(&self, job_id: Uuid) -> Result<String> {
         let path = format!("logs/{}.log", job_id);
-        
-        let response = self.client
-            .get(format!("{}/object/authenticated/{}", self.storage_url(), path))
+
+        let response = self
+            .client
+            .get(format!(
+                "{}/object/authenticated/{}",
+                self.storage_url(),
+                path
+            ))
             .header("apikey", &self.api_key)
             .header("Authorization", format!("Bearer {}", self.api_key))
             .send()
@@ -285,7 +304,8 @@ impl SupabaseClient {
 
     /// Register a worker
     pub async fn register_worker(&self, worker: &WorkerInfo) -> Result<()> {
-        let response = self.client
+        let response = self
+            .client
             .post(format!("{}/workers", self.rest_url()))
             .header("apikey", &self.api_key)
             .header("Authorization", format!("Bearer {}", self.api_key))
@@ -312,8 +332,13 @@ impl SupabaseClient {
 
     /// Get artifacts for a job
     pub async fn get_job_artifacts(&self, job_id: Uuid) -> Result<Vec<Artifact>> {
-        let response = self.client
-            .get(format!("{}/artifacts?job_id=eq.{}", self.rest_url(), job_id))
+        let response = self
+            .client
+            .get(format!(
+                "{}/artifacts?job_id=eq.{}",
+                self.rest_url(),
+                job_id
+            ))
             .header("apikey", &self.api_key)
             .header("Authorization", format!("Bearer {}", self.api_key))
             .send()
@@ -330,7 +355,8 @@ impl SupabaseClient {
 
     /// Store an artifact record
     pub async fn store_artifact(&self, job_id: Uuid, artifact: &Artifact) -> Result<()> {
-        let response = self.client
+        let response = self
+            .client
             .post(format!("{}/artifacts", self.rest_url()))
             .header("apikey", &self.api_key)
             .header("Authorization", format!("Bearer {}", self.api_key))
@@ -362,8 +388,9 @@ impl SupabaseClient {
         body: reqwest::Body,
     ) -> Result<String> {
         let path = format!("artifacts/{}/{}", job_id, file_name);
-        
-        let response = self.client
+
+        let response = self
+            .client
             .post(format!("{}/object/{}", self.storage_url(), path))
             .header("apikey", &self.api_key)
             .header("Authorization", format!("Bearer {}", self.api_key))
@@ -383,8 +410,13 @@ impl SupabaseClient {
 
     /// Verify an API key by its hash
     pub async fn verify_api_key(&self, key_hash: &str) -> Result<Option<ApiKeyRecord>> {
-        let response = self.client
-            .get(format!("{}/api_keys?key_hash=eq.{}&select=*", self.rest_url(), key_hash))
+        let response = self
+            .client
+            .get(format!(
+                "{}/api_keys?key_hash=eq.{}&select=*",
+                self.rest_url(),
+                key_hash
+            ))
             .header("apikey", &self.api_key)
             .header("Authorization", format!("Bearer {}", self.api_key))
             .send()
@@ -401,7 +433,8 @@ impl SupabaseClient {
 
     /// Update API key last_used_at timestamp
     pub async fn update_api_key_usage(&self, key_id: Uuid) -> Result<()> {
-        let response = self.client
+        let response = self
+            .client
             .patch(format!("{}/api_keys?id=eq.{}", self.rest_url(), key_id))
             .header("apikey", &self.api_key)
             .header("Authorization", format!("Bearer {}", self.api_key))
@@ -422,8 +455,9 @@ impl SupabaseClient {
     /// Create a new API key for a user
     pub async fn create_api_key(&self, user_id: Uuid, name: &str, key_hash: &str) -> Result<Uuid> {
         let key_id = Uuid::new_v4();
-        
-        let response = self.client
+
+        let response = self
+            .client
             .post(format!("{}/api_keys", self.rest_url()))
             .header("apikey", &self.api_key)
             .header("Authorization", format!("Bearer {}", self.api_key))
@@ -448,7 +482,8 @@ impl SupabaseClient {
 
     /// List API keys for a user (without the hash)
     pub async fn list_api_keys(&self, user_id: Uuid) -> Result<Vec<ApiKeyInfo>> {
-        let response = self.client
+        let response = self
+            .client
             .get(format!(
                 "{}/api_keys?user_id=eq.{}&select=id,name,created_at,last_used_at",
                 self.rest_url(),
@@ -470,7 +505,8 @@ impl SupabaseClient {
 
     /// Delete an API key
     pub async fn delete_api_key(&self, user_id: Uuid, key_id: Uuid) -> Result<bool> {
-        let response = self.client
+        let response = self
+            .client
             .delete(format!(
                 "{}/api_keys?id=eq.{}&user_id=eq.{}",
                 self.rest_url(),
@@ -484,12 +520,16 @@ impl SupabaseClient {
 
         Ok(response.status().is_success())
     }
-    
+
     /// Verify user credentials (for Supabase, use their Auth API)
     pub async fn verify_user(&self, email: &str, password: &str) -> Result<Option<Uuid>> {
         // Use Supabase Auth API for login
-        let response = self.client
-            .post(format!("{}/auth/v1/token?grant_type=password", self.base_url))
+        let response = self
+            .client
+            .post(format!(
+                "{}/auth/v1/token?grant_type=password",
+                self.base_url
+            ))
             .header("apikey", &self.api_key)
             .header("Content-Type", "application/json")
             .json(&json!({
@@ -507,7 +547,7 @@ impl SupabaseClient {
         struct AuthResponse {
             user: Option<AuthUser>,
         }
-        
+
         #[derive(serde::Deserialize)]
         struct AuthUser {
             id: Uuid,
@@ -516,10 +556,11 @@ impl SupabaseClient {
         let auth_response: AuthResponse = response.json().await?;
         Ok(auth_response.user.map(|u| u.id))
     }
-    
+
     /// Create a new user (for Supabase, use their Auth API)
     pub async fn create_user(&self, email: &str, password: &str) -> Result<Uuid> {
-        let response = self.client
+        let response = self
+            .client
             .post(format!("{}/auth/v1/signup", self.base_url))
             .header("apikey", &self.api_key)
             .header("Content-Type", "application/json")
@@ -539,7 +580,7 @@ impl SupabaseClient {
         struct SignupResponse {
             user: AuthUser,
         }
-        
+
         #[derive(serde::Deserialize)]
         struct AuthUser {
             id: Uuid,
@@ -549,7 +590,6 @@ impl SupabaseClient {
         Ok(signup_response.user.id)
     }
 }
-
 
 /// API key record from database (with hash for verification)
 #[derive(Debug, serde::Deserialize)]

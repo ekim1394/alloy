@@ -1,10 +1,10 @@
 //! Alloy CLI - Jules Mac Runner client
-//! 
+//!
 //! A lightweight CLI for submitting iOS builds to the Jules Mac Runner platform.
 
-mod commands;
-mod client;
 mod archive;
+mod client;
+mod commands;
 
 use clap::{Parser, Subcommand};
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
@@ -101,43 +101,34 @@ async fn main() -> anyhow::Result<()> {
 
     // Initialize logging (quiet by default for CLI)
     tracing_subscriber::registry()
-        .with(tracing_subscriber::EnvFilter::try_from_default_env()
-            .unwrap_or_else(|_| "warn".into()))
+        .with(
+            tracing_subscriber::EnvFilter::try_from_default_env().unwrap_or_else(|_| "warn".into()),
+        )
         .with(tracing_subscriber::fmt::layer().with_target(false))
         .init();
 
     let cli = Cli::parse();
-    
+
     // Allow environment variables to override CLI args
     let api_url = std::env::var("ALLOY_API_URL").unwrap_or(cli.api_url);
     let api_key = cli.api_key.or_else(|| std::env::var("ALLOY_API_KEY").ok());
-    
+
     let client = client::AlloyClient::new(&api_url, api_key.as_deref());
 
     match cli.command {
-        Commands::Run { script, command, repo } => {
-            commands::run::execute(client, command, script, repo).await
-        }
-        Commands::Status { job_id } => {
-            commands::status::execute(client, &job_id).await
-        }
+        Commands::Run {
+            script,
+            command,
+            repo,
+        } => commands::run::execute(client, command, script, repo).await,
+        Commands::Status { job_id } => commands::status::execute(client, &job_id).await,
         Commands::Artifacts { job_id, output } => {
             commands::artifacts::execute(client, &job_id, &output).await
-        }
-        Commands::Cancel { job_id } => {
-            commands::cancel::execute(client, &job_id).await
-        }
-        Commands::Logs { job_id } => {
-            commands::logs::execute(client, &job_id).await
-        }
-        Commands::Jobs { status } => {
-            commands::jobs::execute(client, status.as_deref()).await
-        }
-        Commands::Retry { job_id } => {
-            commands::retry::execute(client, &job_id).await
-        }
-        Commands::Config { action } => {
-            commands::config::execute(action).await
-        }
+        },
+        Commands::Cancel { job_id } => commands::cancel::execute(client, &job_id).await,
+        Commands::Logs { job_id } => commands::logs::execute(client, &job_id).await,
+        Commands::Jobs { status } => commands::jobs::execute(client, status.as_deref()).await,
+        Commands::Retry { job_id } => commands::retry::execute(client, &job_id).await,
+        Commands::Config { action } => commands::config::execute(action).await,
     }
 }

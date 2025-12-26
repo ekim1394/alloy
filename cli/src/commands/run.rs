@@ -1,20 +1,20 @@
 //! Run command - submit a job and stream logs
 
 use anyhow::Result;
-use crossterm::style::{Color, Print, ResetColor, SetForegroundColor};
 use crossterm::execute;
+use crossterm::style::{Color, Print, ResetColor, SetForegroundColor};
 use futures_util::StreamExt;
 use std::io::{stdout, Write};
 use std::path::Path;
 use tokio_tungstenite::connect_async;
 
-use shared::LogEntry;
 use crate::archive;
 use crate::client::AlloyClient;
+use shared::LogEntry;
 
 pub async fn execute(
-    client: AlloyClient, 
-    command: Option<String>, 
+    client: AlloyClient,
+    command: Option<String>,
     script_path: Option<String>,
     repo: Option<String>,
 ) -> Result<()> {
@@ -39,59 +39,65 @@ pub async fn execute(
     if let Some(ref path) = script_path {
         println!("   Script: {}", path);
     }
-    
+
     let response = if let Some(ref repo_url) = repo {
         // Git-based job
         println!("   Source: Git repository");
         println!("   URL: {}", repo_url);
         println!();
-        
-        client.create_job_git(command.as_deref(), script.as_deref(), repo_url).await?
+
+        client
+            .create_job_git(command.as_deref(), script.as_deref(), repo_url)
+            .await?
     } else {
         // Local upload job
         let cwd = std::env::current_dir()?;
         println!("   Source: Local directory");
         println!("   Path: {}", cwd.display());
         println!();
-        
+
         // Get git commit SHA for deduplication
         let commit_sha = archive::get_commit_sha(&cwd).ok();
         if let Some(ref sha) = commit_sha {
             println!("   Commit: {}", sha);
         }
-        
+
         // Create archive
         print!("📦 Creating archive...");
         stdout().flush().ok();
         let archive_data = archive::create_archive(&cwd)?;
         println!(" {} ({})", "✓", archive::format_size(archive_data.len()));
-        
+
         // Request upload URL
         print!("📤 Requesting upload URL...");
         stdout().flush().ok();
-        let upload_info = client.request_upload_url(
-            command.as_deref(), 
-            script.as_deref(),
-            commit_sha.as_deref(),
-        ).await?;
+        let upload_info = client
+            .request_upload_url(command.as_deref(), script.as_deref(), commit_sha.as_deref())
+            .await?;
         println!(" ✓");
-        
+
         // Upload archive (skip if already exists with same commit)
         if upload_info.skip_upload {
             println!("📦 Archive already exists, skipping upload");
         } else {
             print!("📤 Uploading archive...");
             stdout().flush().ok();
-            client.upload_archive(&upload_info.upload_url, &upload_info.upload_token, archive_data).await?;
+            client
+                .upload_archive(
+                    &upload_info.upload_url,
+                    &upload_info.upload_token,
+                    archive_data,
+                )
+                .await?;
             println!(" ✓");
         }
-        
+
         // Confirm and start job
         print!("▶️  Starting job...");
         stdout().flush().ok();
         let response = client.confirm_upload(upload_info.job_id).await?;
         println!(" ✓");
-        
+
         response
     };
 
@@ -130,10 +136,17 @@ pub async fn execute(
                 } else if let Ok(json) = serde_json::from_str::<serde_json::Value>(&text) {
                     // Check for job_complete message
                     if json.get("type").and_then(|t| t.as_str()) == Some("job_complete") {
-                        let status = json.get("status").and_then(|s| s.as_str()).unwrap_or("Unknown");
-                        let exit_code = json.get("exit_code").and_then(|e| e.as_i64()).unwrap_or(-1);
-                        let build_minutes = json.get("build_minutes").and_then(|m| m.as_f64()).unwrap_or(0.0);
-                        
+                        let status = json
+                            .get("status")
+                            .and_then(|s| s.as_str())
+                            .unwrap_or("Unknown");
+                        let exit_code =
+                            json.get("exit_code").and_then(|e| e.as_i64()).unwrap_or(-1);
+                        let build_minutes = json
+                            .get("build_minutes")
+                            .and_then(|m| m.as_f64())
+                            .unwrap_or(0.0);
+
                         println!("\n{}", "─".repeat(60));
                         let (icon, color) = if exit_code == 0 {
                             ("✓", Color::Green)
@@ -143,7 +156,10 @@ pub async fn execute(
                         execute!(
                             stdout(),
                             SetForegroundColor(color),
-                            Print(format!("\n{} Job {} with exit code {}\n", icon, status, exit_code)),
+                            Print(format!(
+                                "\n{} Job {} with exit code {}\n",
+                                icon, status, exit_code
+                            )),
                             ResetColor
                         )?;
                         println!("   Build time: {}", super::format_build_time(build_minutes));
@@ -157,15 +173,15 @@ pub async fn execute(
                         )?;
                     }
                 }
-            }
+            },
             Ok(tokio_tungstenite::tungstenite::Message::Close(_)) => {
                 break;
-            }
+            },
             Err(e) => {
                 eprintln!("WebSocket error: {}", e);
                 break;
-            }
-            _ => {}
+            },
+            _ => {},
         }
     }
 
@@ -174,7 +190,7 @@ pub async fn execute(
 
     // Get final job status
     let job = client.get_job(response.job_id).await?;
-    
+
     let (status_icon, status_color) = match job.status {
         shared::JobStatus::Completed => ("✓", Color::Green),
         shared::JobStatus::Failed => ("✗", Color::Red),
@@ -184,7 +200,10 @@ pub async fn execute(
     execute!(
         stdout(),
         SetForegroundColor(status_color),
-        Print(format!("{} Job {} - {:?}\n", status_icon, job.id, job.status)),
+        Print(format!(
+            "{} Job {} - {:?}\n",
+            status_icon, job.id, job.status
+        )),
         ResetColor
     )?;
 

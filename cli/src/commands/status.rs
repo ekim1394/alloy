@@ -1,8 +1,8 @@
 //! Status command - check job status
 
 use anyhow::Result;
-use crossterm::style::{Color, Print, ResetColor, SetForegroundColor};
 use crossterm::execute;
+use crossterm::style::{Color, Print, ResetColor, SetForegroundColor};
 use std::io::stdout;
 use uuid::Uuid;
 
@@ -27,7 +27,7 @@ pub async fn execute(client: AlloyClient, job_id: &str) -> Result<()> {
         Print(format!("{} Job: {}\n", status_icon, job.id)),
         ResetColor
     )?;
-    
+
     println!("   Status: {:?}", job.status);
     if let Some(ref cmd) = job.command {
         println!("   Command: {}", cmd);
@@ -36,25 +36,25 @@ pub async fn execute(client: AlloyClient, job_id: &str) -> Result<()> {
         println!("   Script: (inline script)");
     }
     println!("   Source: {:?}", job.source_type);
-    
+
     if let Some(ref url) = job.source_url {
         println!("   Source URL: {}", url);
     }
-    
+
     println!("   Created: {}", job.created_at);
-    
+
     if let Some(started) = job.started_at {
         println!("   Started: {}", started);
     }
-    
+
     if let Some(completed) = job.completed_at {
         println!("   Completed: {}", completed);
     }
-    
+
     if let Some(exit_code) = job.exit_code {
         println!("   Exit code: {}", exit_code);
     }
-    
+
     if let Some(minutes) = job.build_minutes {
         println!("   Build time: {}", super::format_build_time(minutes));
     }

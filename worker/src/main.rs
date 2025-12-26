@@ -1,5 +1,5 @@
 //! Jules Mac Runner Worker Agent
-//! 
+//!
 //! Runs on Mac Minis to execute build jobs in Tart VMs.
 
 mod config;
@@ -7,17 +7,17 @@ mod executor;
 mod orchestrator_client;
 mod vm_pool;
 
-use std::sync::Arc;
-use std::sync::atomic::{AtomicBool, Ordering};
-use std::time::{Duration, Instant};
 use chrono::Utc;
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::Arc;
+use std::time::{Duration, Instant};
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
-use shared::{JobResult, LogEntry, LogStream};
 use crate::config::Config;
 use crate::executor::JobExecutor;
 use crate::orchestrator_client::OrchestratorClient;
 use crate::vm_pool::VmPool;
+use shared::{JobResult, LogEntry, LogStream};
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
@@ -26,13 +26,15 @@ async fn main() -> anyhow::Result<()> {
 
     // Initialize tracing
     tracing_subscriber::registry()
-        .with(tracing_subscriber::EnvFilter::try_from_default_env()
-            .unwrap_or_else(|_| "worker=debug".into()))
+        .with(
+            tracing_subscriber::EnvFilter::try_from_default_env()
+                .unwrap_or_else(|_| "worker=debug".into()),
+        )
         .with(tracing_subscriber::fmt::layer())
         .init();
 
     let config = Config::from_env()?;
-    
+
     tracing::info!("Starting Alloy Worker");
     tracing::info!("Orchestrator URL: {}", config.orchestrator_url);
     tracing::info!("VM Pool Size: {}", config.vm_pool_size);
@@ -41,13 +43,15 @@ async fn main() -> anyhow::Result<()> {
     if let Some(ref script) = config.vm_setup_script {
         tracing::info!("VM Setup Script: {}", script);
     }
-    let vm_pool = Arc::new(VmPool::new(
-        config.vm_pool_size, 
-        &config.tart_base_image,
-        config.vm_setup_script.as_deref(),
-    ).await?);
+    let vm_pool = Arc::new(
+        VmPool::new(
+            config.vm_pool_size,
+            &config.tart_base_image,
+            config.vm_setup_script.as_deref(),
+        )
+        .await?,
+    );
     let pool_for_shutdown = Arc::clone(&vm_pool);
-
 
     // Shutdown flag for graceful shutdown
     let shutdown_requested = Arc::new(AtomicBool::new(false));
@@ -84,22 +88,20 @@ async fn main() -> anyhow::Result<()> {
         shutdown_flag.store(true, Ordering::SeqCst);
     });
 
-    let client = OrchestratorClient::new(
-        &config.orchestrator_url,
-        config.worker_secret_key.clone(),
-    );
-    
+    let client =
+        OrchestratorClient::new(&config.orchestrator_url, config.worker_secret_key.clone());
+
     // Log worker auth status
     if config.worker_secret_key.is_some() {
         tracing::info!("Worker authentication enabled (WORKER_SECRET_KEY is set)");
     } else {
         tracing::warn!("Worker authentication disabled (WORKER_SECRET_KEY not set)");
     }
-    
+
     // Register with orchestrator
     let registration = client.register(&config.hostname, config.capacity).await?;
     tracing::info!("Registered as worker {}", registration.worker_id);
-    
+
     let executor = JobExecutor::new(
         registration.worker_id,
         client.clone(),
@@ -110,30 +112,33 @@ async fn main() -> anyhow::Result<()> {
     // Main worker loop
     while !shutdown_requested.load(Ordering::SeqCst) {
         // Send heartbeat
-        if let Err(e) = client.heartbeat(registration.worker_id, 0, config.capacity).await {
+        if let Err(e) = client
+            .heartbeat(registration.worker_id, 0, config.capacity)
+            .await
+        {
             tracing::warn!("Failed to send heartbeat: {}", e);
         }
-        
+
         // Try to claim a job
         match client.claim_job(registration.worker_id).await {
             Ok(Some(job)) => {
                 tracing::info!(job_id = %job.id, "Claimed job, executing...");
-                
+
                 // Execute the job
                 let start_time = Instant::now();
                 match executor.execute(&job).await {
                     Ok(result) => {
                         tracing::info!(
-                            job_id = %job.id, 
+                            job_id = %job.id,
                             exit_code = result.exit_code,
                             "Job completed"
                         );
-                        
+
                         // Report completion
                         if let Err(e) = client.complete_job(registration.worker_id, result).await {
                             tracing::error!("Failed to report job completion: {}", e);
                         }
-                    }
+                    },
                     Err(e) => {
                         tracing::error!(job_id = %job.id, "Job execution failed: {}", e);
 
@@ -147,8 +152,10 @@ async fn main() -> anyhow::Result<()> {
                             stream: LogStream::Stderr,
                             content: error_msg,
                         };
-                        if let Err(log_err) = client.push_log(registration.worker_id, &log_entry).await {
-                             tracing::warn!("Failed to push failure log: {}", log_err);
+                        if let Err(log_err) =
+                            client.push_log(registration.worker_id, &log_entry).await
+                        {
+                            tracing::warn!("Failed to push failure log: {}", log_err);
                         }
 
                         // 2. Report completion with failure
@@ -160,20 +167,23 @@ async fn main() -> anyhow::Result<()> {
                             build_minutes: duration,
                         };
 
-                        if let Err(report_err) = client.complete_job(registration.worker_id, failure_result).await {
+                        if let Err(report_err) = client
+                            .complete_job(registration.worker_id, failure_result)
+                            .await
+                        {
                             tracing::error!("Failed to report job failure: {}", report_err);
                         }
-                    }
+                    },
                 }
-            }
+            },
             Ok(None) => {
                 // No jobs available, wait before polling again
                 tokio::time::sleep(Duration::from_secs(5)).await;
-            }
+            },
             Err(e) => {
                 tracing::warn!("Failed to claim job: {}", e);
                 tokio::time::sleep(Duration::from_secs(10)).await;
-            }
+            },
         }
     }
 

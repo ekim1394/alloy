@@ -19,19 +19,28 @@ pub async fn execute(action: ConfigAction) -> Result<()> {
             println!("Setting API URL to: {}", url);
             println!("Add this to your shell profile:");
             println!("  export ALLOY_API_URL=\"{}\"", url);
-        }
+        },
         ConfigAction::SetKey { key } => {
             println!("Setting API key");
             println!("Add this to your shell profile:");
             println!("  export ALLOY_API_KEY=\"{}\"", key);
-        }
+        },
         ConfigAction::Show => {
             println!("Current configuration:");
-            println!("  ALLOY_API_URL: {}", 
-                std::env::var("ALLOY_API_URL").unwrap_or_else(|_| "(not set)".to_string()));
-            println!("  ALLOY_API_KEY: {}", 
-                if std::env::var("ALLOY_API_KEY").is_ok() { "(set)" } else { "(not set)" }.to_string());
-        }
+            println!(
+                "  ALLOY_API_URL: {}",
+                std::env::var("ALLOY_API_URL").unwrap_or_else(|_| "(not set)".to_string())
+            );
+            println!(
+                "  ALLOY_API_KEY: {}",
+                if std::env::var("ALLOY_API_KEY").is_ok() {
+                    "(set)"
+                } else {
+                    "(not set)"
+                }
+                .to_string()
+            );
+        },
     }
     Ok(())
 }

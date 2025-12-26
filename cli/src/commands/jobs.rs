@@ -18,7 +18,10 @@ pub async fn execute(client: AlloyClient, status: Option<&str>) -> Result<()> {
     }
 
     println!("📋 Recent Jobs ({} total)\n", jobs.len());
-    println!("{:<8} {:<12} {:<38} {:<20}", "STATUS", "TIME", "JOB ID", "COMMAND");
+    println!(
+        "{:<8} {:<12} {:<38} {:<20}",
+        "STATUS", "TIME", "JOB ID", "COMMAND"
+    );
     println!("{}", "─".repeat(78));
 
     for job in &jobs {
@@ -30,10 +33,12 @@ pub async fn execute(client: AlloyClient, status: Option<&str>) -> Result<()> {
             shared::JobStatus::Cancelled => ("⊘ ", Color::DarkGrey),
         };
 
-        let command = job.command.as_deref()
+        let command = job
+            .command
+            .as_deref()
             .or(job.script.as_ref().map(|_| "[script]"))
             .unwrap_or("-");
-        
+
         // Truncate command if too long
         let command_display = if command.len() > 18 {
             format!("{}...", &command[..15])

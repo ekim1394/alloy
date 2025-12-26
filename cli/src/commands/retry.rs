@@ -11,8 +11,7 @@ use uuid::Uuid;
 use crate::client::AlloyClient;
 
 pub async fn execute(client: AlloyClient, job_id: &str) -> Result<()> {
-    let job_id = Uuid::parse_str(job_id)
-        .map_err(|_| anyhow::anyhow!("Invalid job ID format"))?;
+    let job_id = Uuid::parse_str(job_id).map_err(|_| anyhow::anyhow!("Invalid job ID format"))?;
 
     println!("🔄 Retrying job {}...", job_id);
 
@@ -28,7 +27,7 @@ pub async fn execute(client: AlloyClient, job_id: &str) -> Result<()> {
             println!();
             println!("Stream logs with: alloy logs {}", new_job_id);
             Ok(())
-        }
+        },
         Err(e) => {
             execute!(
                 stdout(),
@@ -37,6 +36,6 @@ pub async fn execute(client: AlloyClient, job_id: &str) -> Result<()> {
                 ResetColor
             )?;
             Err(e)
-        }
+        },
     }
 }

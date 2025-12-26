@@ -37,7 +37,8 @@ impl OrchestratorClient {
 
     /// Register this worker with the orchestrator
     pub async fn register(&self, hostname: &str, capacity: u32) -> Result<RegisterWorkerResponse> {
-        let request = self.client
+        let request = self
+            .client
             .post(format!("{}/api/v1/workers/register", self.base_url))
             .json(&json!({
                 "hostname": hostname,
@@ -56,7 +57,8 @@ impl OrchestratorClient {
 
     /// Send heartbeat to orchestrator
     pub async fn heartbeat(&self, worker_id: Uuid, current_jobs: u32, capacity: u32) -> Result<()> {
-        let request = self.client
+        let request = self
+            .client
             .post(format!("{}/api/v1/workers/heartbeat", self.base_url))
             .json(&json!({
                 "worker_id": worker_id,
@@ -76,7 +78,8 @@ impl OrchestratorClient {
 
     /// Try to claim a pending job
     pub async fn claim_job(&self, worker_id: Uuid) -> Result<Option<Job>> {
-        let request = self.client
+        let request = self
+            .client
             .post(format!("{}/api/v1/workers/claim", self.base_url))
             .json(&json!({
                 "worker_id": worker_id,
@@ -94,8 +97,12 @@ impl OrchestratorClient {
 
     /// Report job completion
     pub async fn complete_job(&self, worker_id: Uuid, result: JobResult) -> Result<()> {
-        let request = self.client
-            .post(format!("{}/api/v1/workers/{}/complete", self.base_url, worker_id))
+        let request = self
+            .client
+            .post(format!(
+                "{}/api/v1/workers/{}/complete",
+                self.base_url, worker_id
+            ))
             .json(&result);
 
         let response = self.with_auth(request).send().await?;
@@ -110,8 +117,12 @@ impl OrchestratorClient {
 
     /// Push a log entry to the orchestrator
     pub async fn push_log(&self, worker_id: Uuid, entry: &shared::LogEntry) -> Result<()> {
-        let request = self.client
-            .post(format!("{}/api/v1/workers/{}/log", self.base_url, worker_id))
+        let request = self
+            .client
+            .post(format!(
+                "{}/api/v1/workers/{}/log",
+                self.base_url, worker_id
+            ))
             .json(entry);
 
         let response = self.with_auth(request).send().await?;
@@ -130,8 +141,12 @@ impl OrchestratorClient {
         let stream = tokio_util::io::ReaderStream::new(file);
         let body = reqwest::Body::wrap_stream(stream);
 
-        let request = self.client
-            .put(format!("{}/api/v1/jobs/{}/logs/upload", self.base_url, job_id))
+        let request = self
+            .client
+            .put(format!(
+                "{}/api/v1/jobs/{}/logs/upload",
+                self.base_url, job_id
+            ))
             .body(body);
 
         let response = self.with_auth(request).send().await?;
@@ -145,13 +160,22 @@ impl OrchestratorClient {
     }
 
     /// Upload artifact file to orchestrator (streaming)
-    pub async fn upload_artifact(&self, job_id: Uuid, filename: &str, file_path: &std::path::Path) -> Result<String> {
+    pub async fn upload_artifact(
+        &self,
+        job_id: Uuid,
+        filename: &str,
+        file_path: &std::path::Path,
+    ) -> Result<String> {
         let file = tokio::fs::File::open(file_path).await?;
         let stream = tokio_util::io::ReaderStream::new(file);
         let body = reqwest::Body::wrap_stream(stream);
 
-        let request = self.client
-            .post(format!("{}/api/v1/jobs/{}/artifacts/{}", self.base_url, job_id, filename))
+        let request = self
+            .client
+            .post(format!(
+                "{}/api/v1/jobs/{}/artifacts/{}",
+                self.base_url, job_id, filename
+            ))
             .body(body);
 
         let response = self.with_auth(request).send().await?;

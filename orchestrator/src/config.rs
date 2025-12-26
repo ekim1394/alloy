@@ -6,25 +6,25 @@ use anyhow::{Context, Result};
 pub struct Config {
     /// Supabase project URL
     pub supabase_url: String,
-    
+
     /// Supabase anon/service key
     pub supabase_key: String,
-    
+
     /// Stripe secret key for billing
     pub stripe_secret_key: Option<String>,
-    
+
     /// Stripe webhook secret for verifying webhook signatures
     pub stripe_webhook_secret: Option<String>,
-    
+
     /// Stripe publishable key (for frontend)
     pub stripe_publishable_key: Option<String>,
-    
+
     /// Server port
     pub port: u16,
-    
+
     /// Base URL for the API (used in responses)
     pub base_url: String,
-    
+
     /// Secret key for worker authentication (optional)
     pub worker_secret_key: Option<String>,
 }

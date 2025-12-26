@@ -1,0 +1,23 @@
+# Rust formatter configuration for Alloy
+# Applies to orchestrator, worker, cli, and shared
+
+edition = "2021"
+
+# Formatting style
+max_width = 100
+hard_tabs = false
+tab_spaces = 4
+
+# Code organization
+reorder_imports = true
+reorder_modules = true
+
+# Matching
+match_block_trailing_comma = true
+
+# Chain formatting
+chain_width = 60
+use_small_heuristics = "Default"
+
+# Use field init shorthand
+use_field_init_shorthand = true
