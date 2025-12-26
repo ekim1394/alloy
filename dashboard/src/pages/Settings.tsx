@@ -325,7 +325,10 @@ function Settings() {
                     <div className="text-xs">Copy it now - you won't see it again.</div>
                     <div className="mt-2 text-sm bg-base-100 p-3 rounded-lg border border-success/20 font-mono select-all flex justify-between items-center">
                       {createdKey}
-                      <button className="btn btn-ghost btn-xs btn-square">
+                      <button
+                        className="btn btn-ghost btn-xs btn-square"
+                        onClick={() => navigator.clipboard.writeText(createdKey)}
+                      >
                         <Copy size={14} />
                       </button>
                     </div>
