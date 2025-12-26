@@ -108,7 +108,7 @@ function JobDetail() {
   const displayCommand = job.command || job.script || 'No command'
 
   return (
-    <div className="max-w-7xl mx-auto">
+    <div>
       <div className="mb-4">
         <Link to="/" className="btn btn-ghost btn-sm gap-2">
           ← Back to Jobs
