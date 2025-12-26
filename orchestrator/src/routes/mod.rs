@@ -17,6 +17,8 @@ pub fn worker_routes() -> Router<AppState> {
         .route("/api/v1/workers/claim", post(workers::claim_job))
         .route("/api/v1/workers/:worker_id/complete", post(workers::complete_job))
         .route("/api/v1/workers/:worker_id/log", post(logs::push_log))
+        // Worker artifact upload
+        .route("/api/v1/jobs/:job_id/artifacts/:filename", post(jobs::upload_artifact))
 }
 
 /// All API routes (except workers, which are merged separately with middleware)

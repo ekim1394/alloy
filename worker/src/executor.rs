@@ -303,7 +303,7 @@ impl JobExecutor {
     }
 
     /// Collect build artifacts from the VM
-    async fn collect_artifacts(&self, _job: &Job, vm_ip: &str) -> Result<Vec<Artifact>> {
+    async fn collect_artifacts(&self, job: &Job, vm_ip: &str) -> Result<Vec<Artifact>> {
         let mut artifacts = Vec::new();
         
         // Look for common artifact patterns
@@ -329,14 +329,84 @@ impl JobExecutor {
             if output.status.success() {
                 let files = String::from_utf8_lossy(&output.stdout);
                 for line in files.lines() {
-                    if let Some(artifact) = parse_ls_line(line, pattern) {
-                        artifacts.push(artifact);
+                    if let Some(mut artifact) = parse_ls_line(line, pattern) {
+                        // Download the file from VM
+                        let file_path = self.download_from_vm(vm_ip, &artifact.name).await;
+                        match file_path {
+                            Ok(path) => {
+                                // Upload to orchestrator
+                                match self.client.upload_artifact(job.id, &artifact.name, &path).await {
+                                    Ok(url) => {
+                                        artifact.download_url = Some(url);
+                                        artifacts.push(artifact);
+                                    },
+                                    Err(e) => {
+                                        tracing::error!("Failed to upload artifact {}: {}", artifact.name, e);
+                                        // We still push the artifact record, but without URL
+                                        artifacts.push(artifact);
+                                    }
+                                }
+                                // Clean up temp file
+                                let _ = tokio::fs::remove_file(&path).await;
+                            },
+                            Err(e) => {
+                                tracing::error!("Failed to download artifact {} from VM: {}", artifact.name, e);
+                            }
+                        }
                     }
                 }
             }
         }
         
         Ok(artifacts)
+    }
+
+    /// Download a file from the VM via SCP
+    async fn download_from_vm(&self, vm_ip: &str, filename: &str) -> Result<std::path::PathBuf> {
+        // Validate filename to prevent shell injection
+        if filename.chars().any(|c| !c.is_alphanumeric() && c != '.' && c != '-' && c != '_') {
+            anyhow::bail!("Invalid filename: {}", filename);
+        }
+
+        // Find where the file is using `find` inside the VM
+        let find_cmd = format!("find ~ -name '{}' -type f | head -n 1", filename);
+        let output = Command::new("sshpass")
+            .args([
+                "-p", VM_PASSWORD,
+                "ssh",
+                "-o", "StrictHostKeyChecking=no",
+                "-o", "UserKnownHostsFile=/dev/null",
+                &format!("{}@{}", VM_USER, vm_ip),
+                &find_cmd,
+            ])
+            .output()
+            .await?;
+
+        let full_path = String::from_utf8_lossy(&output.stdout).trim().to_string();
+        if full_path.is_empty() {
+             anyhow::bail!("File not found in VM");
+        }
+
+        // Now scp it
+        let temp_path = std::env::temp_dir().join(filename);
+        let scp_output = Command::new("sshpass")
+            .args([
+                "-p", VM_PASSWORD,
+                "scp",
+                "-o", "StrictHostKeyChecking=no",
+                "-o", "UserKnownHostsFile=/dev/null",
+                &format!("{}@{}:{}", VM_USER, vm_ip, full_path),
+                temp_path.to_str().unwrap(),
+            ])
+            .output()
+            .await?;
+
+        if !scp_output.status.success() {
+             anyhow::bail!("SCP failed: {}", String::from_utf8_lossy(&scp_output.stderr));
+        }
+
+        // Return path for streaming upload
+        Ok(temp_path)
     }
 
     /// Delete the VM

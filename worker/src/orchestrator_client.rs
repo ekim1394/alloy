@@ -143,4 +143,25 @@ impl OrchestratorClient {
 
         Ok(())
     }
+
+    /// Upload artifact file to orchestrator (streaming)
+    pub async fn upload_artifact(&self, job_id: Uuid, filename: &str, file_path: &std::path::Path) -> Result<String> {
+        let file = tokio::fs::File::open(file_path).await?;
+        let stream = tokio_util::io::ReaderStream::new(file);
+        let body = reqwest::Body::wrap_stream(stream);
+
+        let request = self.client
+            .post(format!("{}/api/v1/jobs/{}/artifacts/{}", self.base_url, job_id, filename))
+            .body(body);
+
+        let response = self.with_auth(request).send().await?;
+
+        if !response.status().is_success() {
+            let error = response.text().await?;
+            anyhow::bail!("Failed to upload artifact: {}", error);
+        }
+
+        // Return the public URL from the response body (it's a string)
+        Ok(response.text().await?)
+    }
 }

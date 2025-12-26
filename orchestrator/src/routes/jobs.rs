@@ -360,6 +360,37 @@ pub async fn upload_archive(
     Ok(StatusCode::OK)
 }
 
+/// POST /api/v1/jobs/:job_id/artifacts/:filename - Upload a build artifact
+pub async fn upload_artifact(
+    State(state): State<AppState>,
+    Path((job_id, filename)): Path<(Uuid, String)>,
+    body: axum::body::Body,
+) -> Result<String, (StatusCode, Json<ApiError>)> {
+    // 1. Validate job exists (optional but good practice)
+    if let Err(e) = state.supabase.get_job(job_id).await {
+         tracing::error!("Failed to check job existence: {}", e);
+         return Err((
+             StatusCode::INTERNAL_SERVER_ERROR,
+             Json(ApiError::new(e.to_string(), "database_error")),
+         ));
+    }
+
+    // 2. Upload to Supabase Storage (streaming)
+    match state.supabase.upload_artifact_file(job_id, &filename, reqwest::Body::wrap_stream(body.into_data_stream())).await {
+        Ok(public_url) => {
+            tracing::info!(job_id = %job_id, filename = %filename, "Artifact uploaded");
+            Ok(public_url)
+        },
+        Err(e) => {
+            tracing::error!("Failed to upload artifact: {}", e);
+            Err((
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(ApiError::new(e.to_string(), "upload_failed")),
+            ))
+        }
+    }
+}
+
 /// POST /api/v1/jobs/:job_id/cancel - Cancel a running job
 pub async fn cancel_job(
     State(state): State<AppState>,
