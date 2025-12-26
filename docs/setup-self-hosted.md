@@ -18,6 +18,7 @@ Zero configuration required! The database is created automatically.
 ```bash
 export SQLITE_PATH=/var/lib/jules/database.db
 export WORKER_SECRET_KEY=shared-secret-123
+export SELF_HOSTED=true  # Allows unauthenticated API access
 ./target/release/orchestrator
 ```
 
@@ -42,6 +43,7 @@ psql jules_mac_runner < supabase/schema.sql
 ```bash
 export DATABASE_URL=postgres://user:pass@localhost:5432/jules_mac_runner
 export WORKER_SECRET_KEY=shared-secret-123
+export SELF_HOSTED=true  # Allows unauthenticated API access
 ./target/release/orchestrator
 ```
 
@@ -96,14 +98,13 @@ export S3_SECRET_KEY=minioadmin
 
 ## Authentication
 
-Self-hosted mode uses local authentication:
+With `SELF_HOSTED=true`, API authentication is optional (unauthenticated requests work).
+
+With `SELF_HOSTED=false` (cloud mode), all API requests require authentication:
 
 ```bash
-# Create admin user
-./target/release/orchestrator user create --email admin@example.com
-
-# Generate API key
-./target/release/orchestrator apikey create --name "CI Server"
+# Generate API key (requires Supabase setup)
+alloy config --api-key "jmr_your_key_here"
 ```
 
 ## Next Steps

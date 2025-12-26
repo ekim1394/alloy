@@ -80,6 +80,9 @@ SUPABASE_KEY=<your-service-role-key>
 PORT=3000
 BASE_URL=https://api.alloy-ci.dev
 
+# Authentication (required for cloud)
+SELF_HOSTED=false
+
 # Security
 WORKER_SECRET_KEY=<generate-a-random-secret>
 CORS_ORIGINS=https://alloy-ci.dev,https://app.alloy-ci.dev
