@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useSearchParams } from 'react-router-dom';
-import { Key, CreditCard, Copy, Trash2, Terminal, CheckCircle2, XCircle } from 'lucide-react';
+import { Key, CreditCard, Copy, Trash2, Terminal, CheckCircle2, XCircle, User, Mail, Lock } from 'lucide-react';
 import { fetchApiKeys, createApiKey, deleteApiKey } from '../lib/api';
+import { supabase } from '../lib/supabase';
 import BillingSettings from '../components/BillingSettings';
 import type { ApiKey } from '../types';
 
@@ -13,6 +14,14 @@ function Settings() {
   const [newKeyName, setNewKeyName] = useState('');
   const [createdKey, setCreatedKey] = useState<string | null>(null);
 
+  // User account state
+  const [user, setUser] = useState<import('@supabase/supabase-js').User | null>(null);
+  const [loadingUser, setLoadingUser] = useState(true);
+  const [showPasswordForm, setShowPasswordForm] = useState(false);
+  const [newPassword, setNewPassword] = useState('');
+  const [updatingPassword, setUpdatingPassword] = useState(false);
+  const [passwordMessage, setPasswordMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+
   // Switch to billing tab if returned from checkout or requested via tab param
   useEffect(() => {
     const tab = searchParams.get('tab');
@@ -22,6 +31,21 @@ function Settings() {
       setActiveTab('billing');
     }
   }, [searchParams]);
+
+  // Fetch user data
+  useEffect(() => {
+    async function getUser() {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        setUser(user);
+      } catch (error) {
+        console.error('Error fetching user:', error);
+      } finally {
+        setLoadingUser(false);
+      }
+    }
+    getUser();
+  }, []);
 
   // Fetch API keys
   const { data: apiKeys = [], isLoading } = useQuery<ApiKey[]>({
@@ -59,6 +83,36 @@ function Settings() {
     deleteMutation.mutate(id);
   };
 
+  const handleUpdatePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newPassword) return;
+
+    setUpdatingPassword(true);
+    setPasswordMessage(null);
+
+    try {
+      const { error } = await supabase.auth.updateUser({ password: newPassword });
+      
+      if (error) {
+        setPasswordMessage({ type: 'error', text: error.message });
+      } else {
+        setPasswordMessage({ type: 'success', text: 'Password updated successfully' });
+        setNewPassword('');
+        setShowPasswordForm(false);
+        
+        // Refresh user to ensure identities are up to date
+        const { data: { user } } = await supabase.auth.getUser();
+        setUser(user);
+      }
+    } catch (err: any) {
+      setPasswordMessage({ type: 'error', text: err.message || 'Failed to update password' });
+    } finally {
+      setUpdatingPassword(false);
+    }
+  };
+
+  const hasPassword = user?.identities?.some((identity) => identity.provider === 'email');
+
   return (
     <div className="max-w-4xl mx-auto">
       <div className="flex justify-between items-center mb-8">
@@ -92,6 +146,117 @@ function Settings() {
       <div className="bg-base-100 rounded-xl shadow-sm border border-base-200">
         {activeTab === 'general' ? (
           <div className="p-8">
+            {/* Account Section */}
+            <div className="bg-base-50 rounded-xl p-6 border border-base-200 mb-8">
+              <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
+                <User size={20} className="text-primary" />
+                Account
+              </h3>
+              
+              {loadingUser ? (
+                <div className="flex justify-center p-4">
+                  <span className="loading loading-spinner loading-sm text-primary"></span>
+                </div>
+              ) : user ? (
+                <div className="space-y-4">
+                  <div className="form-control w-full max-w-md">
+                    <label className="label">
+                      <span className="label-text">Email Address</span>
+                    </label>
+                    <div className="relative">
+                      <input
+                        type="text"
+                        value={user.email}
+                        readOnly
+                        className="input input-bordered w-full pl-10 bg-base-200/50 text-base-content/70"
+                      />
+                      <Mail size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-base-content/40" />
+                    </div>
+                  </div>
+
+                  <div className="form-control w-full max-w-md">
+                    <label className="label">
+                      <span className="label-text">Password</span>
+                    </label>
+                    
+                    {!showPasswordForm ? (
+                      <div className="flex items-center gap-4">
+                        <div className="relative flex-1">
+                          <input
+                            type="text"
+                            value={hasPassword ? "••••••••" : "Not set"}
+                            readOnly
+                            className="input input-bordered w-full pl-10 bg-base-200/50 text-base-content/70"
+                          />
+                          <Lock size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-base-content/40" />
+                        </div>
+                        <button 
+                          className="btn btn-outline btn-sm"
+                          onClick={() => {
+                            setShowPasswordForm(true);
+                            setPasswordMessage(null);
+                          }}
+                        >
+                          {hasPassword ? 'Change Password' : 'Set Password'}
+                        </button>
+                      </div>
+                    ) : (
+                      <form onSubmit={handleUpdatePassword} className="bg-base-100 p-4 rounded-lg border border-base-200">
+                        <div className="form-control mb-4">
+                          <label className="label cursor-pointer justify-start gap-2">
+                            <span className="label-text font-medium">New Password</span>
+                          </label>
+                          <input
+                            type="password"
+                            value={newPassword}
+                            onChange={(e) => setNewPassword(e.target.value)}
+                            className="input input-bordered"
+                            placeholder="Enter new password"
+                            minLength={6}
+                            required
+                          />
+                        </div>
+                        
+                        <div className="flex items-center gap-2">
+                          <button 
+                            type="submit" 
+                            className="btn btn-primary btn-sm"
+                            disabled={updatingPassword}
+                          >
+                            {updatingPassword ? <span className="loading loading-spinner loading-xs"></span> : 'Save Password'}
+                          </button>
+                          <button 
+                            type="button" 
+                            className="btn btn-ghost btn-sm"
+                            onClick={() => {
+                              setShowPasswordForm(false);
+                              setNewPassword('');
+                              setPasswordMessage(null);
+                            }}
+                            disabled={updatingPassword}
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      </form>
+                    )}
+                    
+                    {passwordMessage && (
+                      <div className={`alert ${passwordMessage.type === 'success' ? 'alert-success' : 'alert-error'} mt-4 py-2 text-sm shadow-sm`}>
+                        {passwordMessage.type === 'success' ? <CheckCircle2 size={16} /> : <XCircle size={16} />}
+                        <span>{passwordMessage.text}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ) : (
+                <div role="alert" className="alert alert-warning">
+                  <XCircle size={24} />
+                  <span>Unable to load user information.</span>
+                </div>
+              )}
+            </div>
+
             <div className="bg-base-50 rounded-xl p-6 border border-base-200 mb-8">
               <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
                 <Key size={20} className="text-primary" />
