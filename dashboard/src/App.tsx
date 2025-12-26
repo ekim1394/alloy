@@ -9,6 +9,7 @@ import Billing from './pages/Billing'
 import BillingSetup from './pages/BillingSetup'
 import JobDetail from './pages/JobDetail'
 import Landing from './pages/Landing'
+import Sidebar from './components/Sidebar'
 import { fetchSubscription } from './lib/api'
 import type { Subscription } from './types'
 
@@ -80,7 +81,8 @@ function NavBar() {
 }
 
 function AppContent() {
-  const { user, loading } = useAuth()
+  const { user, loading, signOut } = useAuth()
+  const navigate = useNavigate()
   const hostMode = getHostMode()
   const [subscription, setSubscription] = useState<Subscription | null>(null)
   const [subLoading, setSubLoading] = useState(true)
@@ -97,11 +99,21 @@ function AppContent() {
     }
   }, [user])
 
+  const handleSignOut = async () => {
+    await signOut()
+    if (hostMode === 'app') {
+      window.location.href = 'https://alloy-ci.dev'
+    } else {
+      navigate('/login')
+    }
+  }
+
   // Show loading state while checking auth
   if (loading || (user && subLoading)) {
     return (
-      <div className="app" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <div className="card">Loading...</div>
+      <div className="app loading-screen">
+        <div className="loading-spinner"></div>
+        <p>Loading...</p>
       </div>
     )
   }
@@ -158,12 +170,12 @@ function AppContent() {
     )
   }
 
-  // Authenticated view with billing set up (app mode or local with user)
+  // Authenticated view with sidebar layout
   return (
-    <div className="app">
-      <NavBar />
+    <div className="app app-with-sidebar">
+      <Sidebar onSignOut={handleSignOut} />
       
-      <main className="main-content">
+      <main className="main-content-sidebar">
         <Routes>
           <Route path="/" element={<Dashboard />} />
           <Route path="/login" element={<Dashboard />} />
@@ -171,6 +183,8 @@ function AppContent() {
           <Route path="/settings" element={<Settings />} />
           <Route path="/billing" element={<Billing />} />
           <Route path="/jobs/:jobId" element={<JobDetail />} />
+          <Route path="/agents" element={<div className="page-placeholder"><h2>Agents</h2><p className="placeholder-text">Agent management coming soon...</p></div>} />
+          <Route path="/history" element={<div className="page-placeholder"><h2>Build History</h2><p className="placeholder-text">Build history coming soon...</p></div>} />
         </Routes>
       </main>
     </div>
