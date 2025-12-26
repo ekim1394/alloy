@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useLayoutEffect } from 'react'
 import { Routes, Route, Link, useNavigate, Navigate } from 'react-router-dom'
 import { AuthProvider, useAuth } from './contexts/AuthContext'
 import Dashboard from './pages/Dashboard'
@@ -88,8 +88,9 @@ function AppContent() {
   const [subLoading, setSubLoading] = useState(true)
 
   // Load subscription when user is authenticated
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (user) {
+      setSubLoading(true)
       fetchSubscription()
         .then(setSubscription)
         .catch(console.error)
