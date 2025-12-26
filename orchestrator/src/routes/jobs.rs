@@ -193,6 +193,7 @@ pub async fn request_upload(
 /// POST /`api/v1/jobs/:job_id/start` - Start a job after upload is complete
 pub async fn start_job(
     State(state): State<AppState>,
+    _auth_user: AuthUser,
     Path(job_id): Path<Uuid>,
 ) -> Result<Json<CreateJobResponse>, (StatusCode, Json<ApiError>)> {
     // Verify job exists and is in pending status
@@ -264,6 +265,7 @@ pub struct ListJobsQuery {
 /// GET /api/v1/jobs - List recent jobs
 pub async fn list_jobs(
     State(state): State<AppState>,
+    _auth_user: AuthUser,
     axum::extract::Query(query): axum::extract::Query<ListJobsQuery>,
 ) -> Result<Json<Vec<Job>>, (StatusCode, Json<ApiError>)> {
     let limit = query.limit.unwrap_or(20).min(100); // Cap at 100
@@ -287,6 +289,7 @@ pub async fn list_jobs(
 /// GET /`api/v1/jobs/:job_id` - Get job status
 pub async fn get_job(
     State(state): State<AppState>,
+    _auth_user: AuthUser,
     Path(job_id): Path<Uuid>,
 ) -> Result<Json<Job>, (StatusCode, Json<ApiError>)> {
     match state.supabase.get_job(job_id).await {
@@ -311,6 +314,7 @@ pub async fn get_job(
 /// GET /`api/v1/jobs/:job_id/artifacts` - Get job artifacts
 pub async fn get_artifacts(
     State(state): State<AppState>,
+    _auth_user: AuthUser,
     Path(job_id): Path<Uuid>,
 ) -> Result<Json<Vec<shared::Artifact>>, (StatusCode, Json<ApiError>)> {
     match state.supabase.get_job_artifacts(job_id).await {

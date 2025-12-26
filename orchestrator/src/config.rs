@@ -31,6 +31,10 @@ pub struct Config {
 
     /// Secret key for worker authentication (optional)
     pub worker_secret_key: Option<String>,
+
+    /// Self-hosted mode: when true, allows unauthenticated access
+    /// When false (default), requires API key or JWT for all routes
+    pub self_hosted: bool,
 }
 
 impl Config {
@@ -50,6 +54,9 @@ impl Config {
             base_url: std::env::var("BASE_URL")
                 .unwrap_or_else(|_| "http://localhost:3000".to_string()),
             worker_secret_key: std::env::var("WORKER_SECRET_KEY").ok(),
+            self_hosted: std::env::var("SELF_HOSTED")
+                .map(|v| v.to_lowercase() == "true" || v == "1")
+                .unwrap_or(false),
         })
     }
 }

@@ -115,6 +115,7 @@ alloy run -c "xcodebuild build -scheme MyApp"
 | `DATABASE_MODE` | `local` | `local` (SQLite) or `supabase` |
 | `BASE_URL` | `http://localhost:3000` | Public URL |
 | `WORKER_SECRET_KEY` | (none) | Shared auth secret |
+| `SELF_HOSTED` | `false` | When `true`, allows unauthenticated API access |
 | `CORS_ORIGINS` | `*` | Comma-separated allowed origins (Prot only) |
 | `SUPABASE_URL` | (none) | Required if DATABASE_MODE=supabase |
 | `SUPABASE_KEY` | (none) | Required if DATABASE_MODE=supabase |

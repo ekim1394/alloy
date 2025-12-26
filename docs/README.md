@@ -1,6 +1,19 @@
 # Documentation
 
-Welcome to Alloy - the self-hosted iOS/macOS build runner.
+Welcome to Alloy - the iOS build runner built for agentic workflows.
+
+## Quick Start
+
+```bash
+# Install Alloy CLI
+curl -fsSL https://raw.githubusercontent.com/your-org/alloy/main/install.sh | bash
+
+# Set API Key (sign up at https://alloy-ci.dev)
+alloy config set api_key YOUR_API_KEY
+
+# Submit a job
+alloy run "xcodebuild test -scheme MyApp"
+```
 
 ## Table of Contents
 
@@ -42,20 +55,4 @@ Welcome to Alloy - the self-hosted iOS/macOS build runner.
                     │   Database   │     │  Tart VM    │
                     │ (SQLite/PG)  │     │  (macOS)    │
                     └──────────────┘     └─────────────┘
-```
-
-## Quick Start
-
-```bash
-# Build
-cargo build --release
-
-# Run orchestrator (SQLite - zero config)
-./target/release/orchestrator
-
-# Run worker on Mac Mini
-./target/release/worker
-
-# Submit a job
-alloy run "xcodebuild test"
 ```

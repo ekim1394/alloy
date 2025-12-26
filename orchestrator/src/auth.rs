@@ -28,6 +28,8 @@ pub enum AuthType {
     Jwt,
     /// API key for programmatic access
     ApiKey,
+    /// Anonymous access (self-hosted mode only)
+    Anonymous,
 }
 
 /// Claims from Supabase JWT token
@@ -78,13 +80,24 @@ where
                 let key = &header[7..];
                 verify_api_key(&state, key).await
             },
-            _ => Err((
-                StatusCode::UNAUTHORIZED,
-                Json(ApiError::new(
-                    "Missing or invalid Authorization header. Use 'Bearer <jwt>' or 'ApiKey <key>'",
-                    "unauthorized",
-                )),
-            )),
+            _ => {
+                // In self-hosted mode, allow unauthenticated access with anonymous user
+                if state.config.self_hosted {
+                    Ok(Self {
+                        user_id: Uuid::nil(), // Anonymous user with nil UUID
+                        email: None,
+                        auth_type: AuthType::Anonymous,
+                    })
+                } else {
+                    Err((
+                        StatusCode::UNAUTHORIZED,
+                        Json(ApiError::new(
+                            "Missing or invalid Authorization header. Use 'Bearer <jwt>' or 'ApiKey <key>'",
+                            "unauthorized",
+                        )),
+                    ))
+                }
+            },
         }
     }
 }
