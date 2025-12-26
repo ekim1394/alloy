@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
-import { fetchJobs, getWebSocketUrl } from '../lib/api'
+import { fetchJobs } from '../lib/api'
 import type { Job } from '../types'
 import LiveLogPanel from '../components/LiveLogPanel'
 

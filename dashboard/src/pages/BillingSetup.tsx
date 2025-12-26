@@ -1,11 +1,9 @@
 import { useState } from 'react'
 import { createCheckoutSession } from '../lib/api'
 
-interface Props {
-  onComplete?: () => void
-}
 
-export default function BillingSetup({ onComplete }: Props) {
+
+export default function BillingSetup() {
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState<string | null>(null)
 

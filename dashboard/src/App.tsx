@@ -164,7 +164,7 @@ function AppContent() {
       <div className="app">
         <NavBar />
         <main className="main-content">
-          <BillingSetup onComplete={() => window.location.reload()} />
+          <BillingSetup />
         </main>
       </div>
     )
