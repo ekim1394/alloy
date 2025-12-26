@@ -1,7 +1,7 @@
 //! Job management endpoints
 
 use axum::{
-    extract::{Path, State},
+    extract::{Extension, Path, State},
     http::StatusCode,
     Json,
 };
@@ -9,11 +9,13 @@ use serde::Deserialize;
 use uuid::Uuid;
 
 use shared::{ApiError, CreateJobRequest, CreateJobResponse, Job, JobStatus, SourceType, UploadUrlResponse};
+use crate::auth::AuthUser;
 use crate::state::AppState;
 
 /// POST /api/v1/jobs - Create a new build job
 pub async fn create_job(
     State(state): State<AppState>,
+    Extension(user): Extension<AuthUser>,
     Json(request): Json<CreateJobRequest>,
 ) -> Result<(StatusCode, Json<CreateJobResponse>), (StatusCode, Json<ApiError>)> {
     // Validate request - need either command or script
@@ -24,8 +26,7 @@ pub async fn create_job(
         ));
     }
 
-    // TODO: Extract customer_id from auth token
-    let customer_id = Uuid::new_v4(); // Placeholder
+    let customer_id = user.user_id;
     
     // Create the job based on command or script
     let job = if let Some(ref script) = request.script {
@@ -87,6 +88,7 @@ pub struct UploadRequest {
 /// POST /api/v1/jobs/upload - Request an upload URL for local files
 pub async fn request_upload(
     State(state): State<AppState>,
+    Extension(user): Extension<AuthUser>,
     Json(request): Json<UploadRequest>,
 ) -> Result<(StatusCode, Json<UploadUrlResponse>), (StatusCode, Json<ApiError>)> {
     // Validate request
@@ -97,8 +99,7 @@ pub async fn request_upload(
         ));
     }
 
-    // TODO: Extract customer_id from auth token
-    let customer_id = Uuid::new_v4(); // Placeholder
+    let customer_id = user.user_id;
     let job_id = Uuid::new_v4();
     
     // Use commit_sha for storage path if provided (enables deduplication)
