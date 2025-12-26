@@ -14,7 +14,7 @@ use commands::config::ConfigAction;
 #[derive(Parser)]
 #[command(name = "alloy")]
 #[command(author = "Jules Mac Runner")]
-#[command(version = env!("CARGO_PKG_VERSION"))]
+#[command(version = option_env!("ALLOY_VERSION").unwrap_or(env!("CARGO_PKG_VERSION")))]
 #[command(about = "Remote macOS builds for iOS developers and AI agents")]
 struct Cli {
     /// API endpoint URL
