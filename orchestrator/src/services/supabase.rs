@@ -359,7 +359,7 @@ impl SupabaseClient {
         &self,
         job_id: Uuid,
         file_name: &str,
-        data: Vec<u8>,
+        body: reqwest::Body,
     ) -> Result<String> {
         let path = format!("artifacts/{}/{}", job_id, file_name);
         
@@ -368,7 +368,7 @@ impl SupabaseClient {
             .header("apikey", &self.api_key)
             .header("Authorization", format!("Bearer {}", self.api_key))
             .header("Content-Type", "application/octet-stream")
-            .body(data)
+            .body(body)
             .send()
             .await?;
 
