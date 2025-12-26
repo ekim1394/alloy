@@ -223,8 +223,8 @@ function Dashboard() {
                   <tr>
                     <th className="font-semibold text-xs tracking-wider opacity-70">STATUS</th>
                     <th className="font-semibold text-xs tracking-wider opacity-70">JOB ID / WORKFLOW</th>
-                    <th className="font-semibold text-xs tracking-wider opacity-70">AGENT</th>
-                    <th className="font-semibold text-xs tracking-wider opacity-70">DURATION</th>
+                    <th className="font-semibold text-xs tracking-wider opacity-70 hidden md:table-cell">AGENT</th>
+                    <th className="font-semibold text-xs tracking-wider opacity-70 hidden md:table-cell">DURATION</th>
                     <th className="font-semibold text-xs tracking-wider opacity-70">ACTIONS</th>
                   </tr>
                 </thead>
@@ -258,12 +258,12 @@ function Dashboard() {
                           </div>
                         </div>
                       </td>
-                      <td>
+                      <td className="hidden md:table-cell">
                         <div className="badge badge-ghost badge-outline gap-1 font-mono text-xs">
                            <Server size={10} /> {job.worker_id ? `M1-${job.worker_id.slice(0, 4)}` : '—'}
                         </div>
                       </td>
-                      <td className="font-mono text-sm">{formatDuration(job)}</td>
+                      <td className="font-mono text-sm hidden md:table-cell">{formatDuration(job)}</td>
                       <td>
                         <Link 
                           to={`/jobs/${job.id}`}
