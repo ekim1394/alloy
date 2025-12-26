@@ -9,9 +9,11 @@ mod vm_pool;
 
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
-use std::time::Duration;
+use std::time::{Duration, Instant};
+use chrono::Utc;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
+use shared::{JobResult, LogEntry, LogStream};
 use crate::config::Config;
 use crate::executor::JobExecutor;
 use crate::orchestrator_client::OrchestratorClient;
@@ -118,6 +120,7 @@ async fn main() -> anyhow::Result<()> {
                 tracing::info!(job_id = %job.id, "Claimed job, executing...");
                 
                 // Execute the job
+                let start_time = Instant::now();
                 match executor.execute(&job).await {
                     Ok(result) => {
                         tracing::info!(
@@ -133,7 +136,33 @@ async fn main() -> anyhow::Result<()> {
                     }
                     Err(e) => {
                         tracing::error!(job_id = %job.id, "Job execution failed: {}", e);
-                        // TODO: Report failure
+
+                        // Report failure to orchestrator so job isn't stuck
+                        let error_msg = format!("Job execution failed on worker: {}", e);
+
+                        // 1. Push error log
+                        let log_entry = LogEntry {
+                            job_id: job.id,
+                            timestamp: Utc::now(),
+                            stream: LogStream::Stderr,
+                            content: error_msg,
+                        };
+                        if let Err(log_err) = client.push_log(registration.worker_id, &log_entry).await {
+                             tracing::warn!("Failed to push failure log: {}", log_err);
+                        }
+
+                        // 2. Report completion with failure
+                        let duration = start_time.elapsed().as_secs_f64() / 60.0;
+                        let failure_result = JobResult {
+                            job_id: job.id,
+                            exit_code: -1, // Internal error
+                            artifacts: vec![],
+                            build_minutes: duration,
+                        };
+
+                        if let Err(report_err) = client.complete_job(registration.worker_id, failure_result).await {
+                            tracing::error!("Failed to report job failure: {}", report_err);
+                        }
                     }
                 }
             }
