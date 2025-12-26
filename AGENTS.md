@@ -62,6 +62,11 @@ docs/               # Documentation
 - Worker authentication (shared secret)
 - **Stripe billing** (Supabase native via wrapper + Edge Functions)
 - Dashboard billing page
+- **Security Hardening**:
+  - Argon2 id password hashing
+  - SHA-256 API key hashing
+  - Rate limiting (100 req/min per IP)
+  - Configurable CORS for production
 
 **Billing Architecture:**
 - Uses Supabase Stripe Wrapper for querying Stripe data via SQL
@@ -106,6 +111,9 @@ alloy run -c "xcodebuild build -scheme MyApp"
 | `DATABASE_MODE` | `local` | `local` (SQLite) or `supabase` |
 | `BASE_URL` | `http://localhost:3000` | Public URL |
 | `WORKER_SECRET_KEY` | (none) | Shared auth secret |
+| `CORS_ORIGINS` | `*` | Comma-separated allowed origins (Prot only) |
+| `SUPABASE_URL` | (none) | Required if DATABASE_MODE=supabase |
+| `SUPABASE_KEY` | (none) | Required if DATABASE_MODE=supabase |
 
 ### Dashboard
 | Variable | Description |
