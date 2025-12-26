@@ -6,6 +6,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import Stripe from 'https://esm.sh/stripe@13?target=deno'
 
 serve(async (req) => {
+  // Force update verify async fix
   try {
     const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY')!, {
       apiVersion: '2023-10-16',
@@ -22,10 +23,11 @@ serve(async (req) => {
     
     let event: Stripe.Event
     try {
-      event = stripe.webhooks.constructEvent(body, signature, webhookSecret)
+      event = await stripe.webhooks.constructEventAsync(body, signature, webhookSecret)
     } catch (err) {
-      console.error('Webhook signature verification failed:', err)
-      return new Response('Webhook signature verification failed', { status: 400 })
+      const msg = `Webhook signature verification failed. received_sig: ${signature?.substring(0,5)}... secret_prefix: ${webhookSecret?.substring(0,5)}... error: ${err.message}`
+      console.error(msg)
+      return new Response(msg, { status: 400 })
     }
 
     // Initialize Supabase with service role for admin access
@@ -45,14 +47,15 @@ serve(async (req) => {
           await supabase
             .from('subscriptions')
             .update({
+              stripe_customer_id: session.customer as string,
               stripe_subscription_id: session.subscription,
               plan,
-              status: 'active',
+              status: 'trialing', // Starts as trialing since we have a 7-day trial
               updated_at: new Date().toISOString(),
             })
             .eq('user_id', userId)
           
-          console.log(`User ${userId} upgraded to ${plan}`)
+          console.log(`User ${userId} upgraded to ${plan} with customer ${session.customer}`)
         }
         break
       }
@@ -73,12 +76,22 @@ serve(async (req) => {
         }
         const status = statusMap[subscription.status] || 'active'
         
+        const safeIsoString = (timestamp: number | null | undefined) => {
+          if (!timestamp) return new Date().toISOString()
+          try {
+            return new Date(timestamp * 1000).toISOString()
+          } catch (e) {
+            console.error(`Invalid timestamp: ${timestamp}`, e)
+            return new Date().toISOString()
+          }
+        }
+
         await supabase
           .from('subscriptions')
           .update({
             status,
-            current_period_start: new Date(subscription.current_period_start * 1000).toISOString(),
-            current_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
+            current_period_start: safeIsoString(subscription.current_period_start),
+            current_period_end: safeIsoString(subscription.current_period_end),
             updated_at: new Date().toISOString(),
           })
           .eq('stripe_customer_id', customerId)

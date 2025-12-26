@@ -16,11 +16,22 @@ serve(async (req) => {
     return new Response('ok', { headers: corsHeaders })
   }
 
+  // Debug: Log the Supabase config
+  const supabaseUrl = Deno.env.get('SUPABASE_URL')
+  const supabaseKey = Deno.env.get('SUPABASE_ANON_KEY')
+  console.log('Supabase URL:', supabaseUrl)
+  console.log('Supabase Anon Key prefix:', supabaseKey?.substring(0, 20) + '...')
+
   try {
     // Get auth token from request
     const authHeader = req.headers.get('Authorization')
+    console.log('Auth header present:', !!authHeader)
+    
     if (!authHeader) {
-      throw new Error('Missing authorization header')
+      return new Response(
+        JSON.stringify({ error: 'Missing authorization header' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
     }
 
     // Initialize Supabase client
@@ -32,8 +43,13 @@ serve(async (req) => {
 
     // Get user
     const { data: { user }, error: userError } = await supabase.auth.getUser()
+    console.log('User lookup result:', { user: !!user, error: userError?.message })
+    
     if (userError || !user) {
-      throw new Error('Unauthorized')
+      return new Response(
+        JSON.stringify({ error: 'Unauthorized', details: userError?.message }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      )
     }
 
     // Parse request body
@@ -88,12 +104,21 @@ serve(async (req) => {
       line_items: [{ price: priceId, quantity: 1 }],
       success_url: successUrl,
       cancel_url: cancelUrl,
+      automatic_tax: { enabled: true },
+      // Enable automatic payment methods by NOT specifying payment_method_types
+      // Stripe will use the default payment methods configured in the dashboard
+      
+      customer_update: {
+        address: 'auto',
+      },
+
       subscription_data: {
         trial_period_days: 7,
         metadata: { user_id: user.id, plan },
       },
       metadata: { user_id: user.id, plan },
     })
+
 
     return new Response(
       JSON.stringify({ url: session.url, sessionId: session.id }),
