@@ -76,6 +76,16 @@ serve(async (req) => {
         }
         const status = statusMap[subscription.status] || 'active'
         
+        // Determine plan from price ID
+        const priceId = subscription.items.data[0]?.price.id
+        let plan = undefined
+        
+        const proPriceId = Deno.env.get('STRIPE_PRO_PRICE_ID')
+        const teamPriceId = Deno.env.get('STRIPE_TEAM_PRICE_ID')
+        
+        if (priceId === proPriceId) plan = 'pro'
+        if (priceId === teamPriceId) plan = 'team'
+
         const safeIsoString = (timestamp: number | null | undefined) => {
           if (!timestamp) return new Date().toISOString()
           try {
@@ -86,14 +96,20 @@ serve(async (req) => {
           }
         }
 
-        await supabase
-          .from('subscriptions')
-          .update({
+        const updateData: any = {
             status,
             current_period_start: safeIsoString(subscription.current_period_start),
             current_period_end: safeIsoString(subscription.current_period_end),
             updated_at: new Date().toISOString(),
-          })
+        }
+        // Only update plan if we matched it
+        if (plan) {
+            updateData.plan = plan
+        }
+
+        await supabase
+          .from('subscriptions')
+          .update(updateData)
           .eq('stripe_customer_id', customerId)
         
         console.log(`Subscription updated for customer ${customerId}: ${status}`)
