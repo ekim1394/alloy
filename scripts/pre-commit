@@ -1,0 +1,64 @@
+#!/bin/bash
+
+# Pre-commit hook for linting and formatting
+# This hook runs linting and formatting checks before each commit
+
+set -e
+
+echo "🔍 Running pre-commit checks..."
+
+# Get the root of the git repository
+ROOT_DIR="$(git rev-parse --show-toplevel)"
+
+# Check if we have staged Rust files
+RUST_STAGED=$(git diff --cached --name-only --diff-filter=ACM | grep -E '\.(rs)$' || true)
+
+# Check if we have staged TypeScript/JavaScript files in dashboard
+DASHBOARD_STAGED=$(git diff --cached --name-only --diff-filter=ACM | grep -E '^dashboard/.*\.(ts|tsx|js|jsx)$' || true)
+
+# ============================================
+# Rust Checks (if Rust files are staged)
+# ============================================
+if [ -n "$RUST_STAGED" ]; then
+    echo "🦀 Checking Rust formatting..."
+    if ! cargo fmt --all -- --check; then
+        echo "❌ Rust formatting check failed. Run 'cargo fmt --all' to fix."
+        exit 1
+    fi
+
+    echo "📎 Running Clippy..."
+    if ! cargo clippy --all-targets --all-features -- -D warnings; then
+        echo "❌ Clippy found issues. Please fix them before committing."
+        exit 1
+    fi
+fi
+
+# ============================================
+# Dashboard Checks (if dashboard files are staged)
+# ============================================
+if [ -n "$DASHBOARD_STAGED" ]; then
+    echo "📦 Checking Dashboard formatting..."
+    cd "$ROOT_DIR/dashboard"
+    
+    if ! npm run format:check 2>/dev/null; then
+        echo "❌ Dashboard formatting check failed. Run 'cd dashboard && npm run format' to fix."
+        exit 1
+    fi
+
+    echo "🔧 Running ESLint..."
+    if ! npm run lint 2>/dev/null; then
+        echo "❌ ESLint found issues. Please fix them before committing."
+        exit 1
+    fi
+    
+    cd "$ROOT_DIR"
+fi
+
+# If no relevant files were staged, just pass
+if [ -z "$RUST_STAGED" ] && [ -z "$DASHBOARD_STAGED" ]; then
+    echo "✅ No Rust or Dashboard files staged, skipping lint checks."
+    exit 0
+fi
+
+echo "✅ All pre-commit checks passed!"
+exit 0

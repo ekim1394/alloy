@@ -80,6 +80,9 @@ docs/               # Documentation
 ## Running Locally
 
 ```bash
+# Install git hooks (first time setup)
+./scripts/setup-hooks.sh
+
 # Build
 cargo build --release
 
@@ -164,14 +167,14 @@ supabase secrets set KEY=value
 
 ## Code Quality
 
-Before committing changes, **ALWAYS** reuse the defined workflow to format and lint the code. This ensures consistency across Rust and TypeScript files.
+A **pre-commit hook** is installed via `./scripts/setup-hooks.sh` that automatically runs linting and formatting checks on staged files before each commit:
 
-Use the `check-lint-format` workflow:
+- **Rust files**: Runs `cargo fmt --check` and `cargo clippy`
+- **Dashboard files**: Runs `prettier --check` and `eslint`
 
-- **Rust**: Runs `cargo fmt` and `cargo clippy`
-- **Dashboard**: Runs `prettier` and `eslint`
+To bypass hooks (use sparingly): `git commit --no-verify`
 
-You can trigger this via the workflow file `.agent/workflows/check-lint-format.md`.
+You can also manually run checks using the `check-lint-format` workflow (`.agent/workflows/check-lint-format.md`).
 
 ## Known Issues
 
