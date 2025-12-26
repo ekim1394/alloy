@@ -41,8 +41,7 @@ function Landing() {
         <div className="hero-content text-center">
           <div className="max-w-4xl">
             <h1 className="text-5xl md:text-7xl font-extrabold tracking-tight mb-8">
-              Eliminate the GitHub Tax. <br />
-              <span className="text-success">Reclaim Developer Time.</span>
+              <span className="text-success">Reclaim Developer Time</span>
             </h1>
             <p className="text-xl md:text-2xl text-base-content/80 mb-12 max-w-3xl mx-auto">
               The self-hosted iOS CI runner for Apple Silicon. 50% faster builds, 90% lower costs, and complete privacy.
