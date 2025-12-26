@@ -21,3 +21,6 @@
 # Dashboard
 dashboard/dist
 node_modules
+
+# Agents
+.agent

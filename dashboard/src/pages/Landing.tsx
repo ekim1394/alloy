@@ -3,121 +3,304 @@ import { Link } from 'react-router-dom'
 function Landing() {
   return (
     <div className="landing">
+      {/* Navigation */}
+      <nav className="landing-nav">
+        <div className="nav-container">
+          <div className="nav-left">
+            <Link to="/" className="nav-logo">
+              <span className="logo-icon">⚡</span> Alloy
+            </Link>
+            <div className="nav-menu">
+              <a href="#features">Features</a>
+              <a href="#how-it-works">How It Works</a>
+              <a href="https://github.com/your-repo/alloy" target="_blank" rel="noopener noreferrer">Documentation</a>
+              <a href="https://github.com/your-repo/alloy" target="_blank" rel="noopener noreferrer">Docs</a>
+            </div>
+          </div>
+          <div className="nav-right">
+            <Link to="/login" className="nav-link-signin">Sign In</Link>
+            <Link to="/signup" className="btn btn-primary">Get Started</Link>
+          </div>
+        </div>
+      </nav>
+
       {/* Hero Section */}
-      <section className="hero">
-        <div className="hero-content">
-          <h1 className="hero-title">
-            <span className="hero-icon">⚡</span> Alloy
-          </h1>
-          <p className="hero-subtitle">
-            Run macOS CI/CD jobs remotely on your own hardware
-          </p>
-          <p className="hero-description">
-            Build, test, and deploy iOS and macOS apps using workers you control. 
-            No vendor lock-in. No per-minute billing. Just pure, unadulterated compute.
-          </p>
-          <div className="hero-cta">
-            <Link to="/signup" className="btn btn-primary btn-lg">
-              Get Started Free
-            </Link>
-            <Link to="/login" className="btn btn-lg">
-              Sign In
-            </Link>
+      <section className="hero-section">
+        <div className="hero-container">
+          <div className="hero-left">
+            <div className="hero-badge">
+              <span className="badge-dot"></span>
+              Now supporting macOS 15 Sequoia
+            </div>
+            <h1 className="hero-headline">
+              Supercharge your <span className="highlight">Xcode CI</span> with Alloy
+            </h1>
+            <p className="hero-tagline">
+              The self-hosted runner for Apple Silicon-backed Tart VMs. 
+              Instant startups, and zero maintenance overhead.
+            </p>
+            <div className="hero-buttons">
+              <Link to="/signup" className="btn btn-primary btn-lg">
+                Get Started
+              </Link>
+              <a href="https://github.com/your-repo/alloy" className="btn btn-outline btn-lg" target="_blank" rel="noopener noreferrer">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
+                </svg>
+                View on GitHub
+              </a>
+            </div>
+            <div className="hero-trust">
+              <span className="trust-avatars">
+                <span className="trust-avatar">👤</span>
+                <span className="trust-avatar">👤</span>
+                <span className="trust-avatar">👤</span>
+              </span>
+              <span className="trust-text">Trusted by 500+ iOS Engineers</span>
+            </div>
+          </div>
+          <div className="hero-right">
+            <div className="terminal-window">
+              <div className="terminal-header">
+                <div className="terminal-buttons">
+                  <span className="terminal-btn red"></span>
+                  <span className="terminal-btn yellow"></span>
+                  <span className="terminal-btn green"></span>
+                </div>
+                <span className="terminal-title">Terminal</span>
+              </div>
+              <div className="terminal-body">
+                <div className="terminal-line">
+                  <span className="terminal-prompt">$</span> alloy run --vm macos-14
+                </div>
+                <div className="terminal-line output">
+                  <span className="terminal-success">✓</span> Cloning alloy-runner v1.0.0...
+                </div>
+                <div className="terminal-line output">
+                  <span className="terminal-success">✓</span> Connected to GitHub Actions
+                </div>
+                <div className="terminal-line output">
+                  <span className="terminal-success">✓</span> Tart VM macos-14 ready (0.3s)
+                </div>
+                <div className="terminal-line output">
+                  <span className="terminal-success">✓</span> Running: xcodebuild test -scheme MyApp
+                </div>
+                <div className="terminal-line output">
+                  <span className="terminal-info">→</span> Build Succeeded | 47 tests passed
+                </div>
+                <div className="terminal-line output">
+                  <span className="terminal-success">✓</span> Uploading artifacts... done
+                </div>
+                <div className="terminal-line output blank"></div>
+                <div className="terminal-line output">
+                  <span className="terminal-muted">✨ Job completed in 2m 34s</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Tech Stack */}
+      <section className="tech-stack">
+        <p className="tech-label">POWERED BY MODERN INFRASTRUCTURE</p>
+        <div className="tech-logos">
+          <div className="tech-item">
+            <span className="tech-icon">🍎</span>
+            Apple Silicon
+          </div>
+          <div className="tech-item">
+            <span className="tech-icon">🐢</span>
+            Tart
+          </div>
+          <div className="tech-item">
+            <span className="tech-icon">⚙️</span>
+            GitHub Actions
+          </div>
+          <div className="tech-item">
+            <span className="tech-icon">🚀</span>
+            Fastlane
           </div>
         </div>
       </section>
 
       {/* Features Section */}
-      <section className="features">
-        <h2 className="section-title">Why Alloy?</h2>
-        <div className="features-grid">
-          <div className="feature-card">
-            <div className="feature-icon">🖥️</div>
-            <h3>Your Hardware</h3>
-            <p>Run CI jobs on Mac minis, Mac Studios, or any macOS hardware you own. Full control over your build environment.</p>
+      <section className="features-section" id="features">
+        <h2 className="section-heading">Built for Speed and Security</h2>
+        <p className="section-subheading">
+          Alloy leverages the power of Apple Silicon to deliver the fastest CI experience available today.
+        </p>
+        <div className="features-grid-new">
+          <div className="feature-card-new">
+            <div className="feature-icon-new">
+              <span>⚡</span>
+            </div>
+            <h3>Instant Startup</h3>
+            <p>Boot macOS VMs in under 3 seconds. Utilizing Tart's copy-on-write mechanisms for near-instant VM cloning.</p>
           </div>
-          <div className="feature-card">
-            <div className="feature-icon">💰</div>
-            <h3>Fixed Costs</h3>
-            <p>No surprise bills. Pay for your hardware once and run unlimited builds. Perfect for teams and indie developers.</p>
+          <div className="feature-card-new">
+            <div className="feature-icon-new">
+              <span>🔒</span>
+            </div>
+            <h3>Complete Isolation</h3>
+            <p>Every job runs in a fresh, ephemeral Tart VM. No state leakage between builds, guaranteed.</p>
           </div>
-          <div className="feature-card">
-            <div className="feature-icon">🔒</div>
-            <h3>Secure by Default</h3>
-            <p>Your code never leaves your network. End-to-end encryption ensures your proprietary code stays protected.</p>
-          </div>
-          <div className="feature-card">
-            <div className="feature-icon">⚙️</div>
-            <h3>Easy Setup</h3>
-            <p>Install the worker on any Mac in minutes. Connect to the cloud orchestrator and start running jobs immediately.</p>
-          </div>
-          <div className="feature-card">
-            <div className="feature-icon">📊</div>
-            <h3>Real-time Logs</h3>
-            <p>Watch your builds in real-time with streaming logs. Debug issues as they happen, not after.</p>
-          </div>
-          <div className="feature-card">
-            <div className="feature-icon">🔗</div>
-            <h3>CLI First</h3>
-            <p>Powerful CLI for scripting and automation. Integrate with any existing workflow or CI system.</p>
+          <div className="feature-card-new">
+            <div className="feature-icon-new">
+              <span>🖥️</span>
+            </div>
+            <h3>Apple Silicon Native</h3>
+            <p>Hardware virtualization for full macOS VMs on Apple Silicon. Optimized for arm64 apps.</p>
           </div>
         </div>
       </section>
 
-      {/* How It Works */}
-      <section className="how-it-works">
-        <h2 className="section-title">How It Works</h2>
-        <div className="steps">
-          <div className="step">
-            <div className="step-number">1</div>
-            <h3>Install Worker</h3>
-            <p>Download and run the Alloy worker on your Mac. It connects securely to our cloud orchestrator.</p>
+      {/* Orchestration Section */}
+      <section className="orchestration-section" id="how-it-works">
+        <div className="orchestration-container">
+          <div className="orchestration-visual">
+            <div className="orchestration-diagram">
+              <div className="diagram-box cli-box">
+                <span className="diagram-icon">💻</span>
+                <span>CLI</span>
+              </div>
+              <div className="diagram-arrow">→</div>
+              <div className="diagram-box runner-box">
+                <span className="diagram-icon">🔄</span>
+                <span>RUNNER</span>
+              </div>
+              <div className="diagram-arrow">→</div>
+              <div className="diagram-box vm-box">
+                <span className="diagram-icon">🖥️</span>
+                <span>VM</span>
+              </div>
+            </div>
           </div>
-          <div className="step">
-            <div className="step-number">2</div>
-            <h3>Submit Jobs</h3>
-            <p>Use the CLI or API to submit CI jobs. Run xcodebuild, fastlane, or any shell command.</p>
-          </div>
-          <div className="step">
-            <div className="step-number">3</div>
-            <h3>Watch & Deploy</h3>
-            <p>Monitor progress in real-time. Get instant notifications when builds complete.</p>
+          <div className="orchestration-content">
+            <h2>Seamless Orchestration</h2>
+            <p>
+              Alloy acts as a lightweight bridge between your CI provider (GitHub Actions, GitLab CI) and your Tart VMs. It handles the lifecycle of ephemeral environments automatically.
+            </p>
+            <ul className="orchestration-features">
+              <li>
+                <span className="check-icon">✓</span>
+                Auto-registration of runners
+              </li>
+              <li>
+                <span className="check-icon">✓</span>
+                Graceful shutdown and cleanup
+              </li>
+              <li>
+                <span className="check-icon">✓</span>
+                Parallel execution support
+              </li>
+            </ul>
           </div>
         </div>
       </section>
 
-      {/* Code Example */}
-      <section className="code-example">
-        <h2 className="section-title">Get Started in Seconds</h2>
-        <div className="code-block">
-          <div className="code-header">
-            <span className="code-lang">bash</span>
+      {/* Real-time Visibility */}
+      <section className="visibility-section">
+        <div className="visibility-container">
+          <div className="visibility-content">
+            <h2>Real-time Visibility</h2>
+            <p>
+              Debug faster with streaming logs. Alloy pipes every line directly from the VM to your CI dashboard in real-time. No more "unknown error" failures.
+            </p>
+            <a href="#" className="read-docs-link">Read the docs →</a>
           </div>
-          <pre><code>{`# Install the CLI
-brew install alloy
+          <div className="visibility-preview">
+            <div className="log-preview">
+              <div className="log-header">
+                <span className="log-dot green"></span>
+                <span>Build Output • Live</span>
+              </div>
+              <div className="log-content">
+                <div className="log-line"><span className="log-time">12:34:01</span> Compiling SwiftUI views...</div>
+                <div className="log-line"><span className="log-time">12:34:02</span> Building target 'MyApp'...</div>
+                <div className="log-line highlight"><span className="log-time">12:34:03</span> ✓ Build succeeded</div>
+                <div className="log-line"><span className="log-time">12:34:04</span> Running 47 tests...</div>
+                <div className="log-line highlight"><span className="log-time">12:34:15</span> ✓ All tests passed</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
 
-# Run your first job
-alloy run -c "xcodebuild test -scheme MyApp"
-
-# Watch the logs stream in real-time
-alloy logs --follow`}</code></pre>
+      {/* Comparison Table */}
+      <section className="comparison-section">
+        <h2 className="section-heading">Why switch to Alloy?</h2>
+        <p className="section-subheading">Price comparison for self-hosted runners</p>
+        <div className="comparison-table-wrapper">
+          <table className="comparison-table">
+            <thead>
+              <tr>
+                <th>Feature</th>
+                <th className="highlight-col">Alloy (Self-Hosted)</th>
+                <th>Standard Cloud Runner</th>
+                <th>Bare Metal Mac mini</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Startup Time</td>
+                <td className="highlight-col"><span className="value-good">~3 seconds</span></td>
+                <td><span className="value-neutral">2-5+ mins</span></td>
+                <td><span className="value-good">Instant (Shared)</span></td>
+              </tr>
+              <tr>
+                <td>Environment Isolation</td>
+                <td className="highlight-col">
+                  <span className="badge-success">100% Ephemeral</span>
+                </td>
+                <td><span className="value-neutral">Yes</span></td>
+                <td><span className="badge-warning">Dirty State</span></td>
+              </tr>
+              <tr>
+                <td>Hardware Cost</td>
+                <td className="highlight-col"><span className="value-good">One-time</span></td>
+                <td><span className="value-neutral">High Recurring</span></td>
+                <td><span className="value-good">One-time</span></td>
+              </tr>
+              <tr>
+                <td>Maintenance</td>
+                <td className="highlight-col"><span className="value-link">Low (Automated)</span></td>
+                <td><span className="value-good">Zero</span></td>
+                <td><span className="value-warning">High (Manual)</span></td>
+              </tr>
+            </tbody>
+          </table>
         </div>
       </section>
 
       {/* CTA Section */}
-      <section className="cta-section">
-        <h2>Ready to take control of your CI/CD?</h2>
-        <p>Join developers who have ditched per-minute billing for unlimited builds.</p>
-        <div className="hero-cta">
+      <section className="cta-section-new">
+        <h2>Ready to reclaim your build time?</h2>
+        <p>Join hundreds of mobile teams shipping faster with Alloy and Tart.</p>
+        <div className="cta-buttons">
           <Link to="/signup" className="btn btn-primary btn-lg">
-            Create Free Account
+            Install Now
           </Link>
+          <a href="https://github.com/your-repo/alloy" className="btn btn-outline btn-lg" target="_blank" rel="noopener noreferrer">
+            View Documentation
+          </a>
         </div>
       </section>
 
       {/* Footer */}
-      <footer className="landing-footer">
-        <p>© 2024 Alloy. Built for developers, by developers.</p>
+      <footer className="landing-footer-new">
+        <div className="footer-container">
+          <div className="footer-left">
+            <span className="footer-logo">⚡ Alloy</span>
+            <span className="footer-copyright">© 2024 Alloy Runner. Open Source.</span>
+          </div>
+          <div className="footer-right">
+            <a href="#">Documentation</a>
+            <a href="#">GitHub</a>
+            <a href="#">Blog</a>
+            <a href="#">License</a>
+          </div>
+        </div>
       </footer>
     </div>
   )

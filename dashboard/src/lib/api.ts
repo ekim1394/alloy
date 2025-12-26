@@ -56,24 +56,42 @@ export async function retryJob(jobId: string): Promise<RetryJobResponse> {
 
 // ===== API Keys =====
 
+import { supabase } from './supabase'
+
+// Helper to get auth headers from current session
+async function getAuthHeaders(): Promise<Record<string, string>> {
+  const { data: { session } } = await supabase.auth.getSession()
+  if (session?.access_token) {
+    return {
+      'Authorization': `Bearer ${session.access_token}`,
+      'Content-Type': 'application/json',
+    }
+  }
+  return { 'Content-Type': 'application/json' }
+}
+
 export async function fetchApiKeys(): Promise<ApiKey[]> {
-  const response = await fetch(`${API_BASE}/api-keys`)
+  const headers = await getAuthHeaders()
+  const response = await fetch(`${API_BASE}/api-keys`, { headers })
   const data = await handleResponse<{ keys: ApiKey[] }>(response)
   return data.keys || []
 }
 
 export async function createApiKey(name: string): Promise<CreateApiKeyResponse> {
+  const headers = await getAuthHeaders()
   const response = await fetch(`${API_BASE}/api-keys`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers,
     body: JSON.stringify({ name }),
   })
   return handleResponse<CreateApiKeyResponse>(response)
 }
 
 export async function deleteApiKey(keyId: string): Promise<void> {
+  const headers = await getAuthHeaders()
   const response = await fetch(`${API_BASE}/api-keys/${keyId}`, {
     method: 'DELETE',
+    headers,
   })
   if (!response.ok) {
     const error = await response.json().catch(() => ({ message: 'Failed to delete API key' }))
@@ -101,7 +119,6 @@ export function getWebSocketUrl(jobId: string): string {
 
 // ===== Billing API (via Supabase) =====
 
-import { supabase } from './supabase'
 import type { Subscription, CheckoutResponse, PortalResponse } from '../types'
 
 export async function fetchSubscription(): Promise<Subscription | null> {

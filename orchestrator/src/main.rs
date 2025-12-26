@@ -8,6 +8,8 @@ mod routes;
 mod services;
 mod state;
 mod auth;
+mod crypto;
+mod rate_limit;
 pub mod db;
 
 use std::net::SocketAddr;
@@ -87,7 +89,10 @@ async fn main() -> anyhow::Result<()> {
         .layer(DefaultBodyLimit::max(2 * 1024 * 1024 * 1024)) // 2GB limit
         .layer(TraceLayer::new_for_http())
         .layer(build_cors_layer())
+        .layer(rate_limit::create_rate_limiter()) // Rate limiting: 100 req/min per client
         .with_state(state);
+    
+    tracing::info!("Rate limiting enabled: 100 requests/minute per client");
 
     // Start server
     let addr = SocketAddr::from(([0, 0, 0, 0], 3000));

@@ -123,6 +123,42 @@ serve(async (req) => {
         break
       }
 
+      case 'invoice.upcoming': {
+        // Add overage charges before invoice is finalized
+        const invoice = event.data.object as Stripe.Invoice
+        const customerId = invoice.customer as string
+        
+        // Get subscription to check usage
+        const { data: subscription } = await supabase
+          .from('subscriptions')
+          .select('*')
+          .eq('stripe_customer_id', customerId)
+          .single()
+        
+        if (subscription && subscription.plan === 'pro') {
+          const includedMinutes = subscription.minutes_included || 300
+          const usedMinutes = subscription.minutes_used || 0
+          const overageMinutes = usedMinutes - includedMinutes
+          
+          if (overageMinutes > 0) {
+            // Rate: $0.05 per minute = 5 cents per minute
+            const overageRateCents = 5
+            const overageAmountCents = Math.ceil(overageMinutes * overageRateCents)
+            
+            // Add overage as invoice item
+            await stripe.invoiceItems.create({
+              customer: customerId,
+              amount: overageAmountCents,
+              currency: 'usd',
+              description: `Overage: ${overageMinutes.toFixed(1)} additional minutes @ $0.05/min`,
+            })
+            
+            console.log(`Added overage charge for customer ${customerId}: ${overageMinutes.toFixed(1)} min = $${(overageAmountCents / 100).toFixed(2)}`)
+          }
+        }
+        break
+      }
+
       default:
         console.log(`Unhandled event type: ${event.type}`)
     }

@@ -336,18 +336,25 @@ impl Database for SqliteDb {
     }
     
     async fn verify_user(&self, email: &str, password: &str) -> Result<Option<Uuid>> {
-        // Hash the password the same way we do for registration
-        let password_hash = format!("{:x}", md5::compute(password));
-        
-        let result: Option<(String,)> = sqlx::query_as(
-            "SELECT id FROM users WHERE email = ? AND password_hash = ?"
+        // Fetch the stored hash for the user
+        let result: Option<(String, String)> = sqlx::query_as(
+            "SELECT id, password_hash FROM users WHERE email = ?"
         )
         .bind(email)
-        .bind(&password_hash)
         .fetch_optional(&self.pool)
         .await?;
         
-        Ok(result.map(|(id,)| Uuid::parse_str(&id).unwrap_or_default()))
+        match result {
+            Some((id, stored_hash)) => {
+                // Verify password using Argon2
+                if crate::crypto::verify_password(password, &stored_hash) {
+                    Ok(Some(Uuid::parse_str(&id).unwrap_or_default()))
+                } else {
+                    Ok(None)
+                }
+            }
+            None => Ok(None),
+        }
     }
     
     async fn create_user(&self, email: &str, password_hash: &str) -> Result<Uuid> {

@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react'
 import { Routes, Route, Link, useNavigate, Navigate } from 'react-router-dom'
 import { AuthProvider, useAuth } from './contexts/AuthContext'
 import Dashboard from './pages/Dashboard'
@@ -5,8 +6,11 @@ import Login from './pages/Login'
 import Signup from './pages/Signup'
 import Settings from './pages/Settings'
 import Billing from './pages/Billing'
+import BillingSetup from './pages/BillingSetup'
 import JobDetail from './pages/JobDetail'
 import Landing from './pages/Landing'
+import { fetchSubscription } from './lib/api'
+import type { Subscription } from './types'
 
 // Determine which "mode" based on hostname
 function getHostMode(): 'landing' | 'app' | 'local' {
@@ -78,9 +82,23 @@ function NavBar() {
 function AppContent() {
   const { user, loading } = useAuth()
   const hostMode = getHostMode()
+  const [subscription, setSubscription] = useState<Subscription | null>(null)
+  const [subLoading, setSubLoading] = useState(true)
+
+  // Load subscription when user is authenticated
+  useEffect(() => {
+    if (user) {
+      fetchSubscription()
+        .then(setSubscription)
+        .catch(console.error)
+        .finally(() => setSubLoading(false))
+    } else {
+      setSubLoading(false)
+    }
+  }, [user])
 
   // Show loading state while checking auth
-  if (loading) {
+  if (loading || (user && subLoading)) {
     return (
       <div className="app" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         <div className="card">Loading...</div>
@@ -126,7 +144,21 @@ function AppContent() {
     )
   }
 
-  // Authenticated view (app mode or local with user)
+  // Authenticated user without billing setup - show billing onboarding
+  const needsBillingSetup = user && !subscription?.stripe_customer_id
+
+  if (needsBillingSetup) {
+    return (
+      <div className="app">
+        <NavBar />
+        <main className="main-content">
+          <BillingSetup onComplete={() => window.location.reload()} />
+        </main>
+      </div>
+    )
+  }
+
+  // Authenticated view with billing set up (app mode or local with user)
   return (
     <div className="app">
       <NavBar />

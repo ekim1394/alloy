@@ -160,8 +160,15 @@ pub async fn register(
     State(state): State<AppState>,
     Json(request): Json<RegisterRequest>,
 ) -> Result<(StatusCode, Json<LoginResponse>), (StatusCode, Json<ApiError>)> {
-    // Simple password hashing (in production, use bcrypt/argon2)
-    let password_hash = format!("{:x}", md5::compute(&request.password));
+    // Hash password with Argon2id (production-ready)
+    let password_hash = crate::crypto::hash_password(&request.password)
+        .map_err(|e| {
+            tracing::error!("Password hashing failed: {}", e);
+            (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(ApiError::new("Registration failed", "crypto_error")),
+            )
+        })?;
     
     match state.supabase.create_user(&request.email, &password_hash).await {
         Ok(user_id) => {
