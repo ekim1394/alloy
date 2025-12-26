@@ -4,7 +4,7 @@ use anyhow::Result;
 use chrono::Utc;
 use std::process::Stdio;
 use std::sync::Arc;
-use tokio::io::{AsyncBufReadExt, BufReader};
+use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
 use tokio::process::Command;
 use tokio::sync::Mutex;
 use uuid::Uuid;
@@ -72,20 +72,30 @@ impl JobExecutor {
             guard.ip.clone()
         };
         
-        // Skip VM clone/start - it's already running from the pool!
+        // Define log path
+        let log_path = std::env::temp_dir().join(format!("job-{}.log", job.id));
         
         // Step 1: Fetch source code into VM
         tracing::info!(job_id = %job.id, source_type = ?job.source_type, "Fetching source...");
         self.fetch_source(job, &vm_ip).await?;
         
-        // Step 2: Execute the command
+        // Step 2: Execute the command (capturing logs to file)
         tracing::info!(job_id = %job.id, "Executing command...");
-        let exit_code = self.execute_in_vm(job, &vm_ip).await?;
+        let exit_code = self.execute_in_vm(job, &vm_ip, &log_path).await?;
         
-        // Step 3: Collect artifacts
+        // Step 3: Upload logs to storage
+        tracing::info!(job_id = %job.id, "Uploading logs...");
+        if let Err(e) = self.client.upload_log_file(job.id, &log_path).await {
+            tracing::error!(job_id = %job.id, "Failed to upload logs: {}", e);
+            // Don't fail the build just because log upload failed, 
+            // but we should probably note it.
+        }
+        
+        // Cleanup log file
+        let _ = tokio::fs::remove_file(&log_path).await;
+        
+        // Step 4: Collect artifacts
         let artifacts = self.collect_artifacts(job, &vm_ip).await?;
-        
-        // VM cleanup is handled by pool.release() in the caller
         
         let end_time = Utc::now();
         let build_minutes = (end_time - start_time).num_seconds() as f64 / 60.0;
@@ -183,10 +193,14 @@ impl JobExecutor {
     }
 
     /// Execute the job command inside the VM via SSH
-    async fn execute_in_vm(&self, job: &Job, vm_ip: &str) -> Result<i32> {
+    async fn execute_in_vm(&self, job: &Job, vm_ip: &str, log_path: &std::path::Path) -> Result<i32> {
         // Get the executable (command or script)
         let executable = job.executable()
             .ok_or_else(|| anyhow::anyhow!("Job has no command or script"))?;
+        
+        // Setup log writer
+        let log_file = tokio::fs::File::create(log_path).await?;
+        let log_writer = Arc::new(Mutex::new(tokio::io::BufWriter::new(log_file)));
         
         // If it's a script, write it to VM and execute
         let run_cmd = if job.script.is_some() {
@@ -222,12 +236,21 @@ impl JobExecutor {
             let client = self.client.clone();
             let worker_id = self.worker_id;
             let job_id = job.id;
+            let writer = Arc::clone(&log_writer);
             
             tokio::spawn(async move {
                 let reader = BufReader::new(stdout);
                 let mut lines = reader.lines();
                 
                 while let Ok(Some(line)) = lines.next_line().await {
+                    // Write to file
+                    {
+                        let mut w = writer.lock().await;
+                        let file_entry = format!("[stdout] {}\n", line);
+                        let _ = w.write_all(file_entry.as_bytes()).await;
+                    }
+
+                    // Send to orchestrator (real-time stream)
                     let entry = LogEntry {
                         job_id,
                         timestamp: Utc::now(),
@@ -244,12 +267,21 @@ impl JobExecutor {
             let client = self.client.clone();
             let worker_id = self.worker_id;
             let job_id = job.id;
+            let writer = Arc::clone(&log_writer);
             
             tokio::spawn(async move {
                 let reader = BufReader::new(stderr);
                 let mut lines = reader.lines();
                 
                 while let Ok(Some(line)) = lines.next_line().await {
+                    // Write to file
+                    {
+                        let mut w = writer.lock().await;
+                        let file_entry = format!("[stderr] {}\n", line);
+                        let _ = w.write_all(file_entry.as_bytes()).await;
+                    }
+
+                    // Send to orchestrator (real-time stream)
                     let entry = LogEntry {
                         job_id,
                         timestamp: Utc::now(),
@@ -262,6 +294,11 @@ impl JobExecutor {
         }
 
         let status = child.wait().await?;
+        
+        // Flush writer
+        let mut w = log_writer.lock().await;
+        let _ = w.flush().await;
+
         Ok(status.code().unwrap_or(-1))
     }
 

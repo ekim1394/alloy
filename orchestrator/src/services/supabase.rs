@@ -203,6 +203,86 @@ impl SupabaseClient {
         Ok(())
     }
 
+    /// Create a job log entry
+    pub async fn create_job_log(&self, job_id: Uuid, content: String) -> Result<()> {
+        let response = self.client
+            .post(format!("{}/job_logs", self.rest_url()))
+            .header("apikey", &self.api_key)
+            .header("Authorization", format!("Bearer {}", self.api_key))
+            .header("Content-Type", "application/json")
+            .header("Prefer", "return=minimal")
+            .json(&json!({
+                "job_id": job_id,
+                "content": content,
+            }))
+            .send()
+            .await?;
+
+        if !response.status().is_success() {
+            let error_text = response.text().await?;
+            anyhow::bail!("Failed to create job log: {}", error_text);
+        }
+
+        Ok(())
+    }
+
+    /// Get logs for a job
+    pub async fn get_job_logs(&self, job_id: Uuid) -> Result<Vec<shared::JobLog>> {
+        let response = self.client
+            .get(format!("{}/job_logs?job_id=eq.{}&order=created_at.asc", self.rest_url(), job_id))
+            .header("apikey", &self.api_key)
+            .header("Authorization", format!("Bearer {}", self.api_key))
+            .send()
+            .await?;
+
+        if !response.status().is_success() {
+            let error_text = response.text().await?;
+            anyhow::bail!("Failed to get job logs: {}", error_text);
+        }
+
+        let logs: Vec<shared::JobLog> = response.json().await?;
+        Ok(logs)
+    }
+
+    /// Upload log file to Supabase Storage
+    pub async fn upload_log_file(&self, job_id: Uuid, data: Vec<u8>) -> Result<()> {
+        let path = format!("logs/{}.log", job_id);
+        
+        let response = self.client
+            .post(format!("{}/object/{}", self.storage_url(), path))
+            .header("apikey", &self.api_key)
+            .header("Authorization", format!("Bearer {}", self.api_key))
+            .header("Content-Type", "text/plain")
+            .body(data)
+            .send()
+            .await?;
+
+        if !response.status().is_success() {
+            let error_text = response.text().await?;
+            anyhow::bail!("Failed to upload log file: {}", error_text);
+        }
+
+        Ok(())
+    }
+
+    /// Download log file from Supabase Storage
+    pub async fn download_log_file(&self, job_id: Uuid) -> Result<String> {
+        let path = format!("logs/{}.log", job_id);
+        
+        let response = self.client
+            .get(format!("{}/object/authenticated/{}", self.storage_url(), path))
+            .header("apikey", &self.api_key)
+            .header("Authorization", format!("Bearer {}", self.api_key))
+            .send()
+            .await?;
+
+        if !response.status().is_success() {
+            anyhow::bail!("Log file not found");
+        }
+
+        Ok(response.text().await?)
+    }
+
     /// Register a worker
     pub async fn register_worker(&self, worker: &WorkerInfo) -> Result<()> {
         let response = self.client

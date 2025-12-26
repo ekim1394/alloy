@@ -37,6 +37,12 @@ export async function fetchJob(jobId: string): Promise<JobWithLogs> {
   return { job }
 }
 
+export async function fetchJobLogs(jobId: string): Promise<string[]> {
+  const response = await fetch(`${API_BASE}/jobs/${jobId}/logs/stored`)
+  const logs = await handleResponse<Array<{ content: string }>>(response)
+  return logs.map(l => l.content)
+}
+
 export async function cancelJob(jobId: string): Promise<void> {
   const response = await fetch(`${API_BASE}/jobs/${jobId}/cancel`, {
     method: 'POST',

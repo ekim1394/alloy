@@ -236,6 +236,15 @@ pub struct RegisterWorkerResponse {
     pub token: String,
 }
 
+/// A stored log entry
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct JobLog {
+    pub id: Uuid,
+    pub job_id: Uuid,
+    pub content: String,
+    pub created_at: DateTime<Utc>,
+}
+
 // ============================================
 // Billing Models
 // ============================================

@@ -74,12 +74,67 @@ pub async fn push_log(
         let _ = tx.send(log_json);
         Ok(StatusCode::OK)
     } else {
-        Err((
-            StatusCode::NOT_FOUND,
-            Json(ApiError::new(
-                format!("No active log stream for job {}", entry.job_id),
-                "stream_not_found",
-            )),
-        ))
+        // It's normal for no stream to exist if no one is watching
+        Ok(StatusCode::OK)
+    }
+}
+
+/// GET /api/v1/jobs/:job_id/logs/stored - Get stored logs for a job
+pub async fn get_stored_logs(
+    State(state): State<AppState>,
+    Path(job_id): Path<Uuid>,
+) -> Result<Json<Vec<shared::JobLog>>, (StatusCode, Json<ApiError>)> {
+    // Try to get the log file from storage
+    // Path: logs/{job_id}.log
+    match state.supabase.download_log_file(job_id).await {
+        Ok(content) => {
+            // Parse content line by line into JobLog entries
+            // Format in file: "[STDOUT] line content" or just content
+            let logs: Vec<shared::JobLog> = content
+                .lines()
+                .enumerate()
+                .map(|(i, line)| {
+                    // Try to parse stream type if present, otherwise default to stdout
+                    let (stream, content) = if line.starts_with("[STDOUT] ") {
+                        (shared::LogStream::Stdout, &line[9..])
+                    } else if line.starts_with("[STDERR] ") {
+                        (shared::LogStream::Stderr, &line[9..])
+                    } else {
+                        (shared::LogStream::Stdout, line)
+                    };
+
+                    shared::JobLog {
+                        id: Uuid::new_v4(), // Ephemeral ID
+                        job_id,
+                        content: content.to_string(),
+                        created_at: chrono::Utc::now(), // We don't have timestamps in simple log file yet
+                    }
+                })
+                .collect();
+            
+            Ok(Json(logs))
+        }
+        Err(_) => {
+            // If file not found, return empty list (job might be running or failed before logs uploaded)
+            Ok(Json(vec![]))
+        }
+    }
+}
+
+/// POST /api/v1/jobs/:job_id/logs/upload - Upload complete log file
+pub async fn upload_logs(
+    State(state): State<AppState>,
+    Path(job_id): Path<Uuid>,
+    body: axum::body::Bytes,
+) -> Result<StatusCode, (StatusCode, Json<ApiError>)> {
+    match state.supabase.upload_log_file(job_id, body.to_vec()).await {
+        Ok(_) => Ok(StatusCode::OK),
+        Err(e) => {
+            tracing::error!("Failed to upload log file: {}", e);
+            Err((
+                StatusCode::INTERNAL_SERVER_ERROR,
+                Json(ApiError::new(e.to_string(), "upload_error")),
+            ))
+        }
     }
 }

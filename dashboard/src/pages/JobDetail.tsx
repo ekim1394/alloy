@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { fetchJob, cancelJob, retryJob, getWebSocketUrl } from '../lib/api'
+import { fetchJob, fetchJobLogs, cancelJob, retryJob, getWebSocketUrl } from '../lib/api'
 
 function JobDetail() {
   const { jobId } = useParams<{ jobId: string }>()
@@ -25,7 +25,26 @@ function JobDetail() {
     },
   })
 
+  // Fetch stored logs (only once or when job completes)
+  const { data: storedLogs } = useQuery({
+    queryKey: ['job-logs', jobId],
+    queryFn: () => fetchJobLogs(jobId!),
+    enabled: !!jobId && !!jobData?.job && jobData.job.status !== 'pending',
+    staleTime: Infinity, // Don't auto-refetch, rely on WS for running jobs
+  })
+
   const job = jobData?.job
+
+  // Sync stored logs to state
+  useEffect(() => {
+    if (storedLogs && logs.length === 0) {
+      setLogs(storedLogs)
+    } else if (storedLogs && job?.status !== 'running' && job?.status !== 'pending') {
+      // If job is finished, ensure we show the full stored logs
+      // This helps if we missed some WS messages or if we just loaded the page
+      setLogs(storedLogs)
+    }
+  }, [storedLogs, job?.status])
 
   // WebSocket for real-time log streaming
   useEffect(() => {

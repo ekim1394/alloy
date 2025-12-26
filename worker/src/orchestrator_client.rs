@@ -123,4 +123,24 @@ impl OrchestratorClient {
 
         Ok(())
     }
+
+    /// Upload log file to orchestrator
+    pub async fn upload_log_file(&self, job_id: Uuid, log_path: &std::path::Path) -> Result<()> {
+        let file = tokio::fs::File::open(log_path).await?;
+        let stream = tokio_util::io::ReaderStream::new(file);
+        let body = reqwest::Body::wrap_stream(stream);
+
+        let request = self.client
+            .put(format!("{}/api/v1/jobs/{}/logs/upload", self.base_url, job_id))
+            .body(body);
+
+        let response = self.with_auth(request).send().await?;
+
+        if !response.status().is_success() {
+            let error = response.text().await?;
+            anyhow::bail!("Failed to upload log file: {}", error);
+        }
+
+        Ok(())
+    }
 }
