@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Settings, LogOut } from 'lucide-react';
+import { LayoutDashboard, Settings, LogOut, MessageSquarePlus } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import Logo from '../assets/logo.png';
 import GithubIcon from './GithubIcon';
@@ -45,6 +45,18 @@ function Sidebar({ onSignOut }: SidebarProps) {
 
         <div className="mt-auto pt-8">
           <ul className="menu p-0 gap-2">
+            <li>
+              <button
+                id="feedback-button"
+                className="hover:bg-primary/10 hover:text-primary"
+                onClick={() => {
+                  // This button is targeted by PostHog to trigger the feedback survey
+                }}
+              >
+                <MessageSquarePlus size={20} />
+                Feedback
+              </button>
+            </li>
             <li>
               <a
                 href="https://github.com/ekim1394/alloy/tree/main/docs"

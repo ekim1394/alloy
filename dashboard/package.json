@@ -16,6 +16,7 @@
     "@tailwindcss/typography": "^0.5.19",
     "@tanstack/react-query": "^5.90.12",
     "lucide-react": "^0.562.0",
+    "posthog-js": "^1.310.1",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-router-dom": "^6.0.0"
