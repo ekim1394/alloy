@@ -36,13 +36,19 @@ impl OrchestratorClient {
     }
 
     /// Register this worker with the orchestrator
-    pub async fn register(&self, hostname: &str, capacity: u32) -> Result<RegisterWorkerResponse> {
+    pub async fn register(
+        &self,
+        hostname: &str,
+        capacity: u32,
+        worker_id: Option<Uuid>,
+    ) -> Result<RegisterWorkerResponse> {
         let request = self
             .client
             .post(format!("{}/api/v1/workers/register", self.base_url))
             .json(&json!({
                 "hostname": hostname,
                 "capacity": capacity,
+                "worker_id": worker_id,
             }));
 
         let response = self.with_auth(request).send().await?;

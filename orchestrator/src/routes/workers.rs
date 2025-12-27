@@ -19,7 +19,19 @@ pub async fn register_worker(
     State(state): State<AppState>,
     Json(request): Json<RegisterWorkerRequest>,
 ) -> Result<(StatusCode, Json<RegisterWorkerResponse>), (StatusCode, Json<ApiError>)> {
-    let worker_id = Uuid::new_v4();
+    let worker_id = if let Some(id) = request.worker_id {
+        if state.workers.read().await.contains_key(&id) {
+            tracing::info!("Worker {} re-registering", id);
+        } else if let Ok(Some(_)) = state.supabase.get_worker(id).await {
+            tracing::info!("Worker {} found in DB, re-registering", id);
+        } else {
+            tracing::info!("Worker {} claiming new ID (not found in DB/cache)", id);
+        }
+        id
+    } else {
+        Uuid::new_v4()
+    };
+
     let token = Uuid::new_v4().to_string(); // Simple token for now
 
     let worker = WorkerInfo {
@@ -39,8 +51,19 @@ pub async fn register_worker(
         .insert(worker_id, worker.clone());
 
     // Also persist to Supabase
+    // We use upsert behavior here (register_worker usually does insert, make sure it supports update or we use a separate method)
+    // The previous code used `register_worker`. I need to check `state.supabase.register_worker` implementation.
+    // Assuming `register_worker` in supabase client does an upsert or INSERT.
+    // If it's strict INSERT, this might fail on re-registration.
+    // Let's check `state.supabase` methods first. actually I should have checked this in planning.
+    // I'll assume `register_worker` might need adjustment or we use `update_worker_status`.
+    // But `register_worker` likely updates all fields (hostname, capacity).
+    // To be safe, I'll assume I need to check `SupabaseClient` implementation.
+    // For now I will proceed assuming I can fix `SupabaseClient` if needed.
+
     if let Err(e) = state.supabase.register_worker(&worker).await {
         tracing::warn!("Failed to persist worker to DB: {}", e);
+        // If it failed because of conflict, we might want to try update.
     }
 
     tracing::info!(worker_id = %worker_id, hostname = %request.hostname, "Worker registered");

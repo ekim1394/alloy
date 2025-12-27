@@ -99,9 +99,49 @@ async fn main() -> anyhow::Result<()> {
         tracing::warn!("Worker authentication disabled (WORKER_SECRET_KEY not set)");
     }
 
+    // Ensure data directory exists
+    let data_dir = std::path::PathBuf::from(&config.data_dir);
+    if !data_dir.exists() {
+        tokio::fs::create_dir_all(&data_dir).await?;
+    }
+
+    let worker_id_path = data_dir.join("worker_id");
+    let stored_worker_id = if worker_id_path.exists() {
+        match tokio::fs::read_to_string(&worker_id_path).await {
+            Ok(content) => match content.trim().parse::<uuid::Uuid>() {
+                Ok(id) => {
+                    tracing::info!("Found existing worker ID: {}", id);
+                    Some(id)
+                },
+                Err(e) => {
+                    tracing::warn!("Failed to parse stored worker ID: {}", e);
+                    None
+                },
+            },
+            Err(e) => {
+                tracing::warn!("Failed to read worker ID file: {}", e);
+                None
+            },
+        }
+    } else {
+        None
+    };
+
     // Register with orchestrator
-    let registration = client.register(&config.hostname, config.capacity).await?;
+    let registration = client
+        .register(&config.hostname, config.capacity, stored_worker_id)
+        .await?;
     tracing::info!("Registered as worker {}", registration.worker_id);
+
+    // Save worker ID if it's new or different
+    if Some(registration.worker_id) != stored_worker_id {
+        if let Err(e) = tokio::fs::write(&worker_id_path, registration.worker_id.to_string()).await
+        {
+            tracing::warn!("Failed to save worker ID to file: {}", e);
+        } else {
+            tracing::info!("Saved worker ID to {}", worker_id_path.display());
+        }
+    }
 
     let executor = JobExecutor::new(
         registration.worker_id,

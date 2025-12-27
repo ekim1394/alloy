@@ -240,6 +240,7 @@ pub struct WorkerHeartbeat {
 pub struct RegisterWorkerRequest {
     pub hostname: String,
     pub capacity: u32,
+    pub worker_id: Option<Uuid>,
 }
 
 /// Worker registration response

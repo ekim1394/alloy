@@ -141,11 +141,9 @@ pub async fn request_upload(
 
     // CLI uploads to orchestrator, which proxies to Supabase (keeps service key secure)
     let upload_url = format!("{}/api/v1/jobs/{}/upload", state.config.base_url, job_id);
-    // Download URL is public Supabase storage
-    let download_url = format!(
-        "{}/storage/v1/object/public/{}",
-        state.config.supabase_url, storage_key
-    );
+    // Store the path relative to storage root (bucket/path) in the DB
+    // This allows us to sign it later
+    let download_url = storage_key.clone();
 
     // Create job based on command or script
     let mut job = if let Some(ref script) = request.script {
@@ -362,12 +360,17 @@ pub async fn upload_archive(
         )
     })?;
 
-    // Extract the path after "/public/" or use job_id as fallback
-    let upload_path = source_url
-        .split("/object/public/")
-        .nth(1)
-        .unwrap_or(&format!("sources/{job_id}.zip"))
-        .to_string();
+    // Extract storage path from source_url
+    // If it's a URL (legacy), try to extract path. If it's already a path (new behavior), use it.
+    let upload_path = if source_url.contains("/object/public/") {
+        source_url
+            .split("/object/public/")
+            .nth(1)
+            .unwrap_or(&source_url)
+            .to_string()
+    } else {
+        source_url.clone()
+    };
 
     // Proxy upload to Supabase Storage
     let storage_url = format!(

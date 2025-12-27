@@ -27,6 +27,9 @@ pub struct Config {
 
     /// Secret key for authenticating with orchestrator (optional)
     pub worker_secret_key: Option<String>,
+
+    /// Directory to store persistent data (like worker ID)
+    pub data_dir: String,
 }
 
 impl Config {
@@ -56,6 +59,12 @@ impl Config {
                 .context("Invalid VM_POOL_SIZE value")?,
             vm_setup_script: std::env::var("VM_SETUP_SCRIPT").ok(),
             worker_secret_key: std::env::var("WORKER_SECRET_KEY").ok(),
+            data_dir: std::env::var("WORKER_DATA_DIR").unwrap_or_else(|_| {
+                dirs::home_dir().map_or_else(
+                    || "/tmp/alloy-worker".to_string(),
+                    |h| h.join(".alloy").to_string_lossy().to_string(),
+                )
+            }),
         })
     }
 }

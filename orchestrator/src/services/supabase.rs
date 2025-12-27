@@ -6,7 +6,7 @@ use reqwest::Client;
 use serde_json::json;
 use uuid::Uuid;
 
-use shared::{Artifact, Job, JobStatus, WorkerInfo};
+use shared::{Artifact, Job, JobStatus, SourceType, WorkerInfo};
 
 /// Client for interacting with Supabase
 #[derive(Clone)]
@@ -150,7 +150,32 @@ impl SupabaseClient {
 
             if update_response.status().is_success() {
                 let updated_jobs: Vec<Job> = update_response.json().await?;
-                return Ok(updated_jobs.into_iter().next());
+                let mut job = updated_jobs.into_iter().next();
+
+                if let Some(ref mut j) = job {
+                    // If source is upload, we need to generate a signed URL
+                    if j.source_type == SourceType::Upload {
+                        if let Some(path) = &j.source_url {
+                            // Extract bucket and path (assumes stored format is "bucket/path")
+                            let parts: Vec<&str> = path.splitn(2, '/').collect();
+                            if parts.len() == 2 {
+                                let bucket = parts[0];
+                                let file_path = parts[1];
+
+                                // Generate signed URL (valid for 1 hour)
+                                match self.create_signed_url(bucket, file_path, 3600).await {
+                                    Ok(url) => {
+                                        j.source_url = Some(url);
+                                    },
+                                    Err(e) => {
+                                        tracing::error!("Failed to sign URL: {}", e);
+                                    },
+                                }
+                            }
+                        }
+                    }
+                }
+                return Ok(job);
             }
         }
 
@@ -304,6 +329,53 @@ impl SupabaseClient {
         Ok(response.text().await?)
     }
 
+    /// Create a signed URL for a file
+    pub async fn create_signed_url(
+        &self,
+        bucket: &str,
+        path: &str,
+        expiry_seconds: i32,
+    ) -> Result<String> {
+        #[derive(serde::Deserialize)]
+        struct SignedUrlResponse {
+            #[serde(rename = "signedURL")]
+            signed_url: String,
+        }
+
+        let response = self
+            .client
+            .post(format!(
+                "{}/object/sign/{}/{}",
+                self.storage_url(),
+                bucket,
+                path
+            ))
+            .header("apikey", &self.api_key)
+            .header("Authorization", format!("Bearer {}", self.api_key))
+            .header("Content-Type", "application/json")
+            .json(&json!({
+                "expiresIn": expiry_seconds,
+            }))
+            .send()
+            .await?;
+
+        if !response.status().is_success() {
+            let error_text = response.text().await?;
+            anyhow::bail!("Failed to create signed URL: {error_text}");
+        }
+
+        let data: SignedUrlResponse = response.json().await?;
+
+        // Prepend base_url if returned URL is relative
+        let signed_url = if data.signed_url.starts_with('/') {
+            format!("{}{}", self.base_url, data.signed_url)
+        } else {
+            data.signed_url
+        };
+
+        Ok(signed_url)
+    }
+
     /// Register a worker
     pub async fn register_worker(&self, worker: &WorkerInfo) -> Result<()> {
         let response = self
@@ -312,7 +384,7 @@ impl SupabaseClient {
             .header("apikey", &self.api_key)
             .header("Authorization", format!("Bearer {}", self.api_key))
             .header("Content-Type", "application/json")
-            .header("Prefer", "return=minimal")
+            .header("Prefer", "return=minimal, resolution=merge-duplicates")
             .json(&json!({
                 "id": worker.id,
                 "hostname": worker.hostname,
@@ -330,6 +402,25 @@ impl SupabaseClient {
         }
 
         Ok(())
+    }
+
+    /// Get a worker by ID
+    pub async fn get_worker(&self, worker_id: Uuid) -> Result<Option<WorkerInfo>> {
+        let response = self
+            .client
+            .get(format!("{}/workers?id=eq.{}", self.rest_url(), worker_id))
+            .header("apikey", &self.api_key)
+            .header("Authorization", format!("Bearer {}", self.api_key))
+            .send()
+            .await?;
+
+        if !response.status().is_success() {
+            let error_text = response.text().await?;
+            anyhow::bail!("Failed to get worker: {error_text}");
+        }
+
+        let workers: Vec<WorkerInfo> = response.json().await?;
+        Ok(workers.into_iter().next())
     }
 
     /// Update worker status (for deregistration)
