@@ -161,6 +161,7 @@ pub async fn request_upload(
             Some(download_url.clone()),
         )
     };
+    job.status = JobStatus::Uploading;
     job.id = job_id;
 
     match state.supabase.create_job(&job).await {
@@ -208,17 +209,33 @@ pub async fn start_job(
                 }));
             }
 
-            if job.status != JobStatus::Pending {
+            if job.status != JobStatus::Pending && job.status != JobStatus::Uploading {
                 return Err((
                     StatusCode::BAD_REQUEST,
                     Json(ApiError::new(
                         format!(
-                            "Job is in {:?} status, expected pending or running",
+                            "Job is in {:?} status, expected pending, uploading, or running",
                             job.status
                         ),
                         "invalid_state",
                     )),
                 ));
+            }
+
+            // Update status to pending if it was uploading
+            // This enables it to be picked up by workers
+            if job.status == JobStatus::Uploading {
+                if let Err(e) = state
+                    .supabase
+                    .update_job_status(job_id, JobStatus::Pending)
+                    .await
+                {
+                    tracing::error!("Failed to update job status to pending: {}", e);
+                    return Err((
+                        StatusCode::INTERNAL_SERVER_ERROR,
+                        Json(ApiError::new(e.to_string(), "database_error")),
+                    ));
+                }
             }
 
             // Create log stream

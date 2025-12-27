@@ -27,6 +27,7 @@ pub async fn execute(client: AlloyClient, status: Option<&str>) -> Result<()> {
     for job in &jobs {
         let (icon, color) = match job.status {
             shared::JobStatus::Pending => ("⏳", Color::Yellow),
+            shared::JobStatus::Uploading => ("📤", Color::Cyan),
             shared::JobStatus::Running => ("▶️ ", Color::Cyan),
             shared::JobStatus::Completed => ("✓ ", Color::Green),
             shared::JobStatus::Failed => ("✗ ", Color::Red),

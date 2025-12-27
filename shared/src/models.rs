@@ -109,6 +109,7 @@ impl Job {
 #[serde(rename_all = "snake_case")]
 pub enum JobStatus {
     Pending,
+    Uploading,
     Running,
     Completed,
     Failed,
@@ -119,6 +120,7 @@ impl std::fmt::Display for JobStatus {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Self::Pending => write!(f, "pending"),
+            Self::Uploading => write!(f, "uploading"),
             Self::Running => write!(f, "running"),
             Self::Completed => write!(f, "completed"),
             Self::Failed => write!(f, "failed"),
