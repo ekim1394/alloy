@@ -25,15 +25,17 @@ jobs:
           targets: ${{ matrix.target }}
 
       - name: Build
-        run: cargo build --release --target ${{ matrix.target }} -p cli
+        run: cargo build --release --target ${{ matrix.target }} -p cli -p orchestrator -p worker
         env:
           ALLOY_VERSION: ${{ github.ref_name }}
 
       - name: Package
         run: |
-          mkdir -p dist
-          cp target/${{ matrix.target }}/release/alloy dist/${{ matrix.name }}
-          chmod +x dist/${{ matrix.name }}
+          mkdir -p dist/${{ matrix.name }}
+          cp target/${{ matrix.target }}/release/alloy dist/${{ matrix.name }}/
+          cp target/${{ matrix.target }}/release/orchestrator dist/${{ matrix.name }}/
+          cp target/${{ matrix.target }}/release/worker dist/${{ matrix.name }}/
+          chmod +x dist/${{ matrix.name }}/*
           cd dist && tar -czvf ${{ matrix.name }}.tar.gz ${{ matrix.name }}
 
       - name: Upload artifact
