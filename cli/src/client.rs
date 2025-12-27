@@ -25,7 +25,12 @@ impl AlloyClient {
 
     fn add_auth(&self, request: reqwest::RequestBuilder) -> reqwest::RequestBuilder {
         if let Some(ref key) = self.api_key {
-            request.header("Authorization", format!("Bearer {key}"))
+            let prefix = if key.starts_with("jmr_") {
+                "ApiKey"
+            } else {
+                "Bearer"
+            };
+            request.header("Authorization", format!("{prefix} {key}"))
         } else {
             request
         }
