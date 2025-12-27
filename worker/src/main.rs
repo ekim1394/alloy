@@ -128,7 +128,7 @@ async fn main() -> anyhow::Result<()> {
     };
 
     // Register with orchestrator
-    let registration = client
+    let mut registration = client
         .register(&config.hostname, config.capacity, stored_worker_id)
         .await?;
     tracing::info!("Registered as worker {}", registration.worker_id);
@@ -158,6 +158,37 @@ async fn main() -> anyhow::Result<()> {
             .await
         {
             tracing::warn!("Failed to send heartbeat: {}", e);
+
+            // Check if failure is due to worker not found (orchestrator restarted)
+            // The error message from client includes the response text which contains "worker_not_found"
+            let error_msg = e.to_string();
+            if error_msg.contains("worker_not_found") {
+                tracing::warn!("Orchestrator lost our session, re-registering...");
+
+                // Add a small delay to avoid hammering if it's flapping
+                tokio::time::sleep(Duration::from_secs(1)).await;
+
+                match client
+                    .register(
+                        &config.hostname,
+                        config.capacity,
+                        Some(registration.worker_id),
+                    )
+                    .await
+                {
+                    Ok(new_reg) => {
+                        tracing::info!("Re-registered successfully");
+                        registration = new_reg;
+                        // Continue loop to send heartbeat immediately with new session?
+                        // Or just let next iteration handle it.
+                    },
+                    Err(reg_err) => {
+                        tracing::error!("Failed to re-register: {}", reg_err);
+                        // Backoff before retrying loop
+                        tokio::time::sleep(Duration::from_secs(5)).await;
+                    },
+                }
+            }
         }
 
         // Try to claim a job
