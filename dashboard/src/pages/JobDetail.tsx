@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { Copy, Check } from 'lucide-react';
 import { fetchJob, fetchJobLogs, cancelJob, retryJob, getWebSocketUrl } from '../lib/api';
 
 function JobDetail() {
@@ -8,6 +9,7 @@ function JobDetail() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [logs, setLogs] = useState<string[]>([]);
+  const [isCopied, setIsCopied] = useState(false);
   const logRef = useRef<HTMLDivElement>(null);
 
   // Fetch job details with auto-refresh
@@ -92,6 +94,19 @@ function JobDetail() {
 
   const handleRetry = () => {
     retryMutation.mutate();
+  };
+
+  const copyLogs = () => {
+    const text = logs.join('');
+    navigator.clipboard
+      .writeText(text)
+      .then(() => {
+        setIsCopied(true);
+        setTimeout(() => setIsCopied(false), 2000);
+      })
+      .catch((err) => {
+        console.error('Failed to copy logs:', err);
+      });
   };
 
   if (isLoading) {
@@ -202,12 +217,29 @@ function JobDetail() {
 
       <div className="card bg-black text-gray-300 shadow-xl overflow-hidden rounded-xl border border-gray-800">
         <div className="bg-gray-900 px-4 py-2 border-b border-gray-800 flex justify-between items-center">
-          <h3 className="font-mono text-xs font-bold uppercase tracking-wider">Console Output</h3>
-          {job.status === 'running' && (
-            <span className="loading loading-spinner loading-xs text-primary"></span>
-          )}
+          <div className="flex items-center gap-2">
+            <h3 className="font-mono text-xs font-bold uppercase tracking-wider">Console Output</h3>
+            {job.status === 'running' && (
+              <span className="loading loading-spinner loading-xs text-primary"></span>
+            )}
+          </div>
+          <button
+            onClick={copyLogs}
+            className="btn btn-ghost btn-xs text-gray-400 hover:text-white gap-1 tooltip tooltip-left"
+            data-tip={isCopied ? 'Copied!' : 'Copy logs'}
+            aria-label="Copy logs to clipboard"
+          >
+            {isCopied ? <Check size={14} /> : <Copy size={14} />}
+            {isCopied ? 'Copied' : 'Copy'}
+          </button>
         </div>
-        <div className="p-4 font-mono text-sm h-[500px] overflow-y-auto" ref={logRef}>
+        <div
+          className="p-4 font-mono text-sm h-[500px] overflow-y-auto focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-inset"
+          ref={logRef}
+          tabIndex={0}
+          role="log"
+          aria-label="Job logs"
+        >
           {logs.length === 0 ? (
             <div className="text-gray-600 italic">
               {job.status === 'running' ? 'Waiting for logs...' : 'No logs available'}
