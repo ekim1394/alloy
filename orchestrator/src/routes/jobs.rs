@@ -17,7 +17,10 @@ use shared::{
 /// Helper to validate artifact filenames
 fn validate_artifact_filename(filename: &str) -> Result<(), ApiError> {
     if filename.trim().is_empty() {
-        return Err(ApiError::new("Filename cannot be empty", "invalid_filename"));
+        return Err(ApiError::new(
+            "Filename cannot be empty",
+            "invalid_filename",
+        ));
     }
 
     if filename == "." || filename == ".." {
