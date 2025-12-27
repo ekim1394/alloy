@@ -241,6 +241,20 @@ impl Database for SqliteDb {
         Ok(())
     }
 
+    async fn update_worker_status(
+        &self,
+        worker_id: Uuid,
+        status: shared::WorkerStatus,
+    ) -> Result<()> {
+        sqlx::query("UPDATE workers SET status = ? WHERE id = ?")
+            .bind(format!("{status:?}").to_lowercase())
+            .bind(worker_id.to_string())
+            .execute(&self.pool)
+            .await?;
+
+        Ok(())
+    }
+
     async fn get_job_artifacts(&self, job_id: Uuid) -> Result<Vec<Artifact>> {
         let rows = sqlx::query_as::<_, ArtifactRow>("SELECT * FROM artifacts WHERE job_id = ?")
             .bind(job_id.to_string())

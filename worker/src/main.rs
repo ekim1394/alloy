@@ -188,6 +188,12 @@ async fn main() -> anyhow::Result<()> {
         }
     }
 
+    // Deregister from orchestrator before shutting down
+    tracing::info!("Deregistering from orchestrator...");
+    if let Err(e) = client.deregister(registration.worker_id).await {
+        tracing::warn!("Failed to deregister: {}", e);
+    }
+
     // Graceful shutdown - clean up VM pool
     pool_for_shutdown.shutdown().await;
 

@@ -76,6 +76,23 @@ impl OrchestratorClient {
         Ok(())
     }
 
+    /// Deregister this worker (mark as offline)
+    pub async fn deregister(&self, worker_id: Uuid) -> Result<()> {
+        let request = self.client.post(format!(
+            "{}/api/v1/workers/{}/deregister",
+            self.base_url, worker_id
+        ));
+
+        let response = self.with_auth(request).send().await?;
+
+        if !response.status().is_success() {
+            let error = response.text().await?;
+            anyhow::bail!("Deregister failed: {error}");
+        }
+
+        Ok(())
+    }
+
     /// Try to claim a pending job
     pub async fn claim_job(&self, worker_id: Uuid) -> Result<Option<Job>> {
         let request = self

@@ -22,6 +22,10 @@ pub fn worker_routes() -> Router<AppState> {
             "/api/v1/workers/:worker_id/complete",
             post(workers::complete_job),
         )
+        .route(
+            "/api/v1/workers/:worker_id/deregister",
+            post(workers::deregister_worker),
+        )
         .route("/api/v1/workers/:worker_id/log", post(logs::push_log))
         // Worker artifact upload
         .route(

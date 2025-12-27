@@ -36,6 +36,11 @@ pub trait Database: Send + Sync + Clone {
     // Worker operations
     async fn register_worker(&self, worker: &WorkerInfo) -> Result<()>;
     async fn update_worker_heartbeat(&self, worker_id: Uuid) -> Result<()>;
+    async fn update_worker_status(
+        &self,
+        worker_id: Uuid,
+        status: shared::WorkerStatus,
+    ) -> Result<()>;
 
     // Artifact operations
     async fn get_job_artifacts(&self, job_id: Uuid) -> Result<Vec<Artifact>>;

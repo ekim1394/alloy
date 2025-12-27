@@ -170,3 +170,29 @@ pub async fn complete_job(
         },
     }
 }
+
+/// POST `/api/v1/workers/:worker_id/deregister` - Deregister a worker (mark as offline)
+pub async fn deregister_worker(
+    State(state): State<AppState>,
+    Path(worker_id): Path<Uuid>,
+) -> Result<StatusCode, (StatusCode, Json<ApiError>)> {
+    // Update in-memory cache
+    {
+        let mut workers = state.workers.write().await;
+        if let Some(worker) = workers.get_mut(&worker_id) {
+            worker.status = WorkerStatus::Offline;
+        }
+    }
+
+    // Update in database
+    if let Err(e) = state
+        .supabase
+        .update_worker_status(worker_id, WorkerStatus::Offline)
+        .await
+    {
+        tracing::warn!("Failed to update worker status in DB: {}", e);
+    }
+
+    tracing::info!(worker_id = %worker_id, "Worker deregistered (offline)");
+    Ok(StatusCode::OK)
+}

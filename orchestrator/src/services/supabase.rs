@@ -332,6 +332,32 @@ impl SupabaseClient {
         Ok(())
     }
 
+    /// Update worker status (for deregistration)
+    pub async fn update_worker_status(
+        &self,
+        worker_id: Uuid,
+        status: shared::WorkerStatus,
+    ) -> Result<()> {
+        let response = self
+            .client
+            .patch(format!("{}/workers?id=eq.{}", self.rest_url(), worker_id))
+            .header("apikey", &self.api_key)
+            .header("Authorization", format!("Bearer {}", self.api_key))
+            .header("Content-Type", "application/json")
+            .json(&json!({
+                "status": format!("{status:?}").to_lowercase(),
+            }))
+            .send()
+            .await?;
+
+        if !response.status().is_success() {
+            let error_text = response.text().await?;
+            anyhow::bail!("Failed to update worker status: {error_text}");
+        }
+
+        Ok(())
+    }
+
     /// Get artifacts for a job
     pub async fn get_job_artifacts(&self, job_id: Uuid) -> Result<Vec<Artifact>> {
         let response = self
