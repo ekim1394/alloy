@@ -48,13 +48,13 @@ impl Config {
                 .parse()
                 .context("Invalid WORKER_CAPACITY value")?,
             tart_base_image: std::env::var("TART_BASE_IMAGE")
-                .unwrap_or_else(|_| "ghcr.io/cirruslabs/macos-sonoma-xcode:latest".to_string()),
+                .unwrap_or_else(|_| "ghcr.io/cirruslabs/macos-tahoe-xcode:latest".to_string()),
             job_timeout_minutes: std::env::var("JOB_TIMEOUT_MINUTES")
                 .unwrap_or_else(|_| "60".to_string())
                 .parse()
                 .context("Invalid JOB_TIMEOUT_MINUTES value")?,
             vm_pool_size: std::env::var("VM_POOL_SIZE")
-                .unwrap_or_else(|_| "2".to_string())
+                .unwrap_or_else(|_| "1".to_string())
                 .parse()
                 .context("Invalid VM_POOL_SIZE value")?,
             vm_setup_script: std::env::var("VM_SETUP_SCRIPT").ok(),

@@ -5,6 +5,7 @@
 mod archive;
 mod client;
 mod commands;
+mod config_store;
 
 use clap::{Parser, Subcommand};
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
@@ -18,8 +19,9 @@ use commands::config::ConfigAction;
 #[command(about = "Remote macOS builds for iOS developers and AI agents")]
 struct Cli {
     /// API endpoint URL
-    #[arg(long, default_value = "http://localhost:3000")]
-    api_url: String,
+    /// API endpoint URL
+    #[arg(long)]
+    api_url: Option<String>,
 
     /// API key for authentication
     #[arg(long)]
@@ -109,9 +111,21 @@ async fn main() -> anyhow::Result<()> {
 
     let cli = Cli::parse();
 
-    // Allow environment variables to override CLI args
-    let api_url = std::env::var("ALLOY_API_URL").unwrap_or(cli.api_url);
-    let api_key = cli.api_key.or_else(|| std::env::var("ALLOY_API_KEY").ok());
+    // Load persistent config
+    let config = config_store::AlloyConfig::load().await.unwrap_or_default();
+
+    // Resolve API URL (CLI args > Env var > Config file > Default)
+    let api_url = cli
+        .api_url
+        .or_else(|| std::env::var("ALLOY_API_URL").ok())
+        .or(config.api_url)
+        .unwrap_or_else(|| "https://api.alloy-ci.dev/".to_string());
+
+    // Resolve API Key (CLI args > Env var > Config file)
+    let api_key = cli
+        .api_key
+        .or_else(|| std::env::var("ALLOY_API_KEY").ok())
+        .or(config.api_key);
 
     let client = client::AlloyClient::new(&api_url, api_key.as_deref());
 
@@ -129,9 +143,6 @@ async fn main() -> anyhow::Result<()> {
         Commands::Logs { job_id } => commands::logs::execute(client, &job_id).await,
         Commands::Jobs { status } => commands::jobs::execute(client, status.as_deref()).await,
         Commands::Retry { job_id } => commands::retry::execute(client, &job_id).await,
-        Commands::Config { action } => {
-            commands::config::execute(action);
-            Ok(())
-        },
+        Commands::Config { action } => commands::config::execute(action).await,
     }
 }
