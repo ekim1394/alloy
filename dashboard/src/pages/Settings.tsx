@@ -6,7 +6,6 @@ import {
   CreditCard,
   Copy,
   Trash2,
-  Terminal,
   CheckCircle2,
   XCircle,
   User,

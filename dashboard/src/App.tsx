@@ -30,8 +30,6 @@ function getHostMode(): 'landing' | 'app' | 'local' {
 }
 
 function NavBar() {
-  const { user, signOut } = useAuth();
-  const navigate = useNavigate();
   const hostMode = getHostMode();
 
   return (
