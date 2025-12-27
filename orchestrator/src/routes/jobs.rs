@@ -255,7 +255,7 @@ pub async fn start_job(
 ) -> Result<Json<CreateJobResponse>, (StatusCode, Json<ApiError>)> {
     // Verify job exists and is in pending status
     match state.supabase.get_job(job_id).await {
-        Ok(Some(job)) => {
+        Ok(Some(mut job)) => {
             // If job is already running (worker claimed it), that's ok - just return success
             if job.status == JobStatus::Running {
                 let stream_url = format!("{}/api/v1/jobs/{}/logs", state.config.base_url, job.id);
@@ -294,6 +294,8 @@ pub async fn start_job(
                         Json(ApiError::new(e.to_string(), "database_error")),
                     ));
                 }
+                // Update local job status so response reflects the change
+                job.status = JobStatus::Pending;
             }
 
             // Create log stream
