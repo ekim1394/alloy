@@ -183,8 +183,8 @@ pub async fn request_upload(
             "{}/storage/v1/object/public/{}",
             state.config.supabase_url, storage_key
         );
-        let http_client = reqwest::Client::new();
-        http_client
+        state
+            .client
             .head(&check_url)
             .send()
             .await
@@ -458,8 +458,8 @@ pub async fn upload_archive(
         state.config.supabase_url, upload_path
     );
 
-    let client = reqwest::Client::new();
-    let response = client
+    let response = state
+        .client
         .put(&storage_url)
         .header("apikey", &state.config.supabase_key)
         .header(
@@ -467,7 +467,7 @@ pub async fn upload_archive(
             format!("Bearer {}", state.config.supabase_key),
         )
         .header("Content-Type", "application/zip")
-        .body(body.to_vec())
+        .body(body)
         .send()
         .await
         .map_err(|e| {
