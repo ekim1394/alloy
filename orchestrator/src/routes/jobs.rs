@@ -14,6 +14,61 @@ use shared::{
     ApiError, CreateJobRequest, CreateJobResponse, Job, JobStatus, SourceType, UploadUrlResponse,
 };
 
+/// Helper to validate artifact filenames
+fn validate_artifact_filename(filename: &str) -> Result<(), ApiError> {
+    if filename.trim().is_empty() {
+        return Err(ApiError::new("Filename cannot be empty", "invalid_filename"));
+    }
+
+    if filename == "." || filename == ".." {
+        return Err(ApiError::new(
+            "Filename cannot be '.' or '..'",
+            "invalid_filename",
+        ));
+    }
+
+    // Worker validation: alphanumeric, ., -, _
+    // This strictly prevents directory traversal via separator characters (/ or \)
+    if filename
+        .chars()
+        .any(|c| !c.is_alphanumeric() && c != '.' && c != '-' && c != '_')
+    {
+        return Err(ApiError::new(
+            "Filename contains invalid characters (allowed: alphanumeric, ., -, _)",
+            "invalid_filename",
+        ));
+    }
+
+    Ok(())
+}
+
+/// Helper to validate storage paths (allows slashes but no traversal)
+fn validate_storage_path(path: &str) -> Result<(), ApiError> {
+    if path.trim().is_empty() {
+        return Err(ApiError::new("Path cannot be empty", "invalid_path"));
+    }
+
+    // Check for traversal
+    for segment in path.split('/') {
+        if segment == ".." {
+            return Err(ApiError::new(
+                "Path cannot contain directory traversal elements",
+                "invalid_path",
+            ));
+        }
+    }
+
+    // Also check for backslashes just in case
+    if path.contains('\\') {
+        return Err(ApiError::new(
+            "Path cannot contain backslashes",
+            "invalid_path",
+        ));
+    }
+
+    Ok(())
+}
+
 /// POST /api/v1/jobs - Create a new build job
 pub async fn create_job(
     State(state): State<AppState>,
@@ -372,6 +427,11 @@ pub async fn upload_archive(
         source_url.clone()
     };
 
+    // Validate storage path to prevent traversal
+    if let Err(e) = validate_storage_path(&upload_path) {
+        return Err((StatusCode::BAD_REQUEST, Json(e)));
+    }
+
     // Proxy upload to Supabase Storage
     let storage_url = format!(
         "{}/storage/v1/object/{}",
@@ -417,7 +477,13 @@ pub async fn upload_artifact(
     Path((job_id, filename)): Path<(Uuid, String)>,
     body: axum::body::Body,
 ) -> Result<String, (StatusCode, Json<ApiError>)> {
-    // 1. Validate job exists (optional but good practice)
+    // 1. Validate filename
+    if let Err(e) = validate_artifact_filename(&filename) {
+        tracing::warn!(filename = %filename, "Invalid artifact filename rejected");
+        return Err((StatusCode::BAD_REQUEST, Json(e)));
+    }
+
+    // 2. Validate job exists (optional but good practice)
     if let Err(e) = state.supabase.get_job(job_id).await {
         tracing::error!("Failed to check job existence: {}", e);
         return Err((
@@ -447,6 +513,45 @@ pub async fn upload_artifact(
                 Json(ApiError::new(e.to_string(), "upload_failed")),
             ))
         },
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_validate_artifact_filename() {
+        // Valid filenames
+        assert!(validate_artifact_filename("app.ipa").is_ok());
+        assert!(validate_artifact_filename("my-app_v1.0.zip").is_ok());
+        assert!(validate_artifact_filename("log.txt").is_ok());
+
+        // Invalid filenames
+        assert!(validate_artifact_filename("").is_err());
+        assert!(validate_artifact_filename(".").is_err());
+        assert!(validate_artifact_filename("..").is_err());
+        assert!(validate_artifact_filename("../app.ipa").is_err()); // Traversal
+        assert!(validate_artifact_filename("folder/app.ipa").is_err()); // Directory separator
+        assert!(validate_artifact_filename("app space.ipa").is_err()); // Spaces
+        assert!(validate_artifact_filename("app$.ipa").is_err()); // Special chars
+        assert!(validate_artifact_filename("app;.sh").is_err()); // Shell injection chars
+    }
+
+    #[test]
+    fn test_validate_storage_path() {
+        // Valid paths
+        assert!(validate_storage_path("sources/abc.zip").is_ok());
+        assert!(validate_storage_path("bucket/folder/file.txt").is_ok());
+        assert!(validate_storage_path("file.txt").is_ok());
+
+        // Invalid paths
+        assert!(validate_storage_path("").is_err());
+        assert!(validate_storage_path("../secret.txt").is_err());
+        assert!(validate_storage_path("folder/../secret.txt").is_err());
+        assert!(validate_storage_path("folder/./secret.txt").is_ok()); // Current dir is fine
+        assert!(validate_storage_path("folder/..").is_err());
+        assert!(validate_storage_path("folder\\file.txt").is_err()); // Backslash
     }
 }
 
