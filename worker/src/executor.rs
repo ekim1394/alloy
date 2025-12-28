@@ -126,15 +126,19 @@ impl JobExecutor {
             .as_ref()
             .ok_or_else(|| anyhow::anyhow!("No source URL provided"))?;
 
+        // Escape source URL to prevent command injection
+        // Replaces ' with '\'' to escape single quotes inside the single-quoted string
+        let safe_source_url = source_url.replace('\'', "'\\''");
+
         let fetch_cmd = match job.source_type {
             SourceType::Git => {
                 // Clone git repository
-                format!("cd ~ && git clone --depth 1 '{source_url}' workspace && cd workspace")
+                format!("cd ~ && git clone --depth 1 '{safe_source_url}' workspace && cd workspace")
             },
             SourceType::Upload => {
                 // Download and extract archive
                 format!(
-                    "cd ~ && curl -sL '{source_url}' -o source.zip && unzip -q source.zip -d workspace && cd workspace"
+                    "cd ~ && curl -sL '{safe_source_url}' -o source.zip && unzip -q source.zip -d workspace && cd workspace"
                 )
             },
         };
@@ -513,6 +517,28 @@ fn parse_ls_line(line: &str, pattern: &str) -> Option<Artifact> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn test_source_url_escaping() {
+        let malicious_url = "http://example.com'; rm -rf /; echo '";
+        let safe_url = malicious_url.replace('\'', "'\\''");
+
+        // Verify the escaped string works as expected in the format string
+        let cmd = format!("git clone '{}'", safe_url);
+
+        // The resulting command should be: git clone 'http://example.com'\'' -> ; rm -rf /; echo '\'' -> '
+        // Which is parsed by shell as a single argument containing the single quotes
+        assert_eq!(cmd, "git clone 'http://example.com'\\''; rm -rf /; echo '\\'''");
+
+        // Verify that the command doesn't contain unescaped single quotes that would terminate the string
+        // The original attack was: 'http://example.com'; rm -rf /; echo ''
+        // The fix makes it: 'http://example.com'\''; rm -rf /; echo '\'''
+        // So the shell sees one argument: http://example.com'; rm -rf /; echo '
+
+        let normal_url = "https://github.com/user/repo.git";
+        let normal_safe = normal_url.replace('\'', "'\\''");
+        assert_eq!(normal_safe, normal_url); // No change for safe URLs
+    }
 
     #[test]
     fn test_parse_ls_line() {
