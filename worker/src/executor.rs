@@ -126,15 +126,18 @@ impl JobExecutor {
             .as_ref()
             .ok_or_else(|| anyhow::anyhow!("No source URL provided"))?;
 
+        // Escape source URL to prevent command injection
+        let escaped_url = escape_shell_arg(source_url);
+
         let fetch_cmd = match job.source_type {
             SourceType::Git => {
                 // Clone git repository
-                format!("cd ~ && git clone --depth 1 '{source_url}' workspace && cd workspace")
+                format!("cd ~ && git clone --depth 1 '{escaped_url}' workspace && cd workspace")
             },
             SourceType::Upload => {
                 // Download and extract archive
                 format!(
-                    "cd ~ && curl -sL '{source_url}' -o source.zip && unzip -q source.zip -d workspace && cd workspace"
+                    "cd ~ && curl -sL '{escaped_url}' -o source.zip && unzip -q source.zip -d workspace && cd workspace"
                 )
             },
         };
@@ -477,6 +480,12 @@ impl JobExecutor {
     }
 }
 
+/// Helper to escape shell arguments for single-quoted strings
+/// ' -> '\''
+fn escape_shell_arg(arg: &str) -> String {
+    arg.replace('\'', "'\\''")
+}
+
 /// Helper to parse ls -la output
 fn parse_ls_line(line: &str, pattern: &str) -> Option<Artifact> {
     if line.is_empty() || line.starts_with("total") {
@@ -513,6 +522,19 @@ fn parse_ls_line(line: &str, pattern: &str) -> Option<Artifact> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn test_escape_shell_arg() {
+        assert_eq!(escape_shell_arg("normal"), "normal");
+        assert_eq!(escape_shell_arg("foo'bar"), "foo'\\''bar");
+        assert_eq!(escape_shell_arg("'"), "'\\''");
+        assert_eq!(escape_shell_arg(""), "");
+        // Test that it works in a format string as expected
+        let url = "http://example.com' && rm -rf /";
+        let escaped = escape_shell_arg(url);
+        let cmd = format!("git clone '{}'", escaped);
+        assert_eq!(cmd, "git clone 'http://example.com'\\'' && rm -rf /'");
+    }
 
     #[test]
     fn test_parse_ls_line() {
