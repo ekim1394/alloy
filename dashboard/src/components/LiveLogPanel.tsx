@@ -10,10 +10,12 @@ interface LiveLogPanelProps {
 function LiveLogPanel({ job, onClose }: LiveLogPanelProps) {
   const [logs, setLogs] = useState<string[]>([]);
   const logRef = useRef<HTMLDivElement>(null);
+  const bufferRef = useRef<string[]>([]);
 
   // WebSocket for real-time log streaming
   useEffect(() => {
     setLogs([]); // Clear logs when job changes
+    bufferRef.current = []; // Clear buffer
 
     if (job.status === 'running') {
       const ws = new WebSocket(getWebSocketUrl(job.id));
@@ -21,13 +23,33 @@ function LiveLogPanel({ job, onClose }: LiveLogPanelProps) {
       ws.onmessage = (event) => {
         const data = JSON.parse(event.data);
         if (data.content) {
-          setLogs((prev) => [...prev, data.content]);
+          bufferRef.current.push(data.content);
         }
       };
 
       return () => ws.close();
     }
   }, [job.id, job.status]);
+
+  // Buffer flush loop
+  useEffect(() => {
+    let animationFrameId: number;
+
+    const flushBuffer = () => {
+      if (bufferRef.current.length > 0) {
+        const batch = [...bufferRef.current];
+        bufferRef.current = [];
+        setLogs((prev) => [...prev, ...batch]);
+      }
+      animationFrameId = requestAnimationFrame(flushBuffer);
+    };
+
+    animationFrameId = requestAnimationFrame(flushBuffer);
+
+    return () => {
+      cancelAnimationFrame(animationFrameId);
+    };
+  }, []);
 
   // Auto-scroll logs
   useEffect(() => {
