@@ -10,10 +10,13 @@ interface LiveLogPanelProps {
 function LiveLogPanel({ job, onClose }: LiveLogPanelProps) {
   const [logs, setLogs] = useState<string[]>([]);
   const logRef = useRef<HTMLDivElement>(null);
+  const bufferRef = useRef<string[]>([]);
+  const frameRef = useRef<number>();
 
   // WebSocket for real-time log streaming
   useEffect(() => {
     setLogs([]); // Clear logs when job changes
+    bufferRef.current = []; // Clear buffer
 
     if (job.status === 'running') {
       const ws = new WebSocket(getWebSocketUrl(job.id));
@@ -21,11 +24,28 @@ function LiveLogPanel({ job, onClose }: LiveLogPanelProps) {
       ws.onmessage = (event) => {
         const data = JSON.parse(event.data);
         if (data.content) {
-          setLogs((prev) => [...prev, data.content]);
+          bufferRef.current.push(data.content);
+
+          if (!frameRef.current) {
+            frameRef.current = requestAnimationFrame(() => {
+              const newLogs = bufferRef.current;
+              bufferRef.current = [];
+              if (newLogs.length > 0) {
+                setLogs((prev) => [...prev, ...newLogs]);
+              }
+              frameRef.current = undefined;
+            });
+          }
         }
       };
 
-      return () => ws.close();
+      return () => {
+        ws.close();
+        if (frameRef.current) {
+          cancelAnimationFrame(frameRef.current);
+          frameRef.current = undefined;
+        }
+      };
     }
   }, [job.id, job.status]);
 
