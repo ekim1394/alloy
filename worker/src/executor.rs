@@ -126,15 +126,18 @@ impl JobExecutor {
             .as_ref()
             .ok_or_else(|| anyhow::anyhow!("No source URL provided"))?;
 
+        // Sanitize source URL to prevent command injection
+        let safe_source_url = escape_shell_arg(source_url);
+
         let fetch_cmd = match job.source_type {
             SourceType::Git => {
-                // Clone git repository
-                format!("cd ~ && git clone --depth 1 '{source_url}' workspace && cd workspace")
+                // Clone git repository (use -- to stop option parsing for url)
+                format!("cd ~ && git clone --depth 1 -- '{safe_source_url}' workspace && cd workspace")
             },
             SourceType::Upload => {
-                // Download and extract archive
+                // Download and extract archive (use -- to stop option parsing for url)
                 format!(
-                    "cd ~ && curl -sL '{source_url}' -o source.zip && unzip -q source.zip -d workspace && cd workspace"
+                    "cd ~ && curl -sL -- '{safe_source_url}' -o source.zip && unzip -q source.zip -d workspace && cd workspace"
                 )
             },
         };
@@ -222,9 +225,13 @@ impl JobExecutor {
 
         // If it's a script, write it to VM and execute
         let run_cmd = if job.script.is_some() {
+            // Generate a random delimiter to prevent injection via script content
+            // Using a UUID ensures collision is cryptographically unlikely
+            let delimiter = format!("EOF_{}", Uuid::new_v4().simple());
+
             // Write script to file and execute
             format!(
-                "cat > /tmp/build_script.sh << 'SCRIPT_EOF'\n{executable}\nSCRIPT_EOF\nchmod +x /tmp/build_script.sh && cd ~/workspace && /tmp/build_script.sh"
+                "cat > /tmp/build_script.sh << '{delimiter}'\n{executable}\n{delimiter}\nchmod +x /tmp/build_script.sh && cd ~/workspace && /tmp/build_script.sh"
             )
         } else {
             // Single command, run in workspace
@@ -477,6 +484,12 @@ impl JobExecutor {
     }
 }
 
+/// Helper to escape arguments for shell (single quotes)
+fn escape_shell_arg(arg: &str) -> String {
+    // Replace ' with '\'' to safely embed in single-quoted string
+    arg.replace('\'', "'\\''")
+}
+
 /// Helper to parse ls -la output
 fn parse_ls_line(line: &str, pattern: &str) -> Option<Artifact> {
     if line.is_empty() || line.starts_with("total") {
@@ -541,5 +554,25 @@ mod tests {
         let artifact = parse_ls_line(line_invalid_size, pattern).expect("Should parse");
         assert_eq!(artifact.name, "app.ipa");
         assert_eq!(artifact.size_bytes, 0);
+    }
+
+    #[test]
+    fn test_escape_shell_arg() {
+        // Normal string
+        assert_eq!(escape_shell_arg("hello"), "hello");
+        assert_eq!(escape_shell_arg("hello-world"), "hello-world");
+
+        // String with spaces
+        assert_eq!(escape_shell_arg("hello world"), "hello world");
+
+        // String with single quotes
+        // ' should become '\''
+        // so 'foo'bar' -> 'foo'\''bar'
+        assert_eq!(escape_shell_arg("foo'bar"), "foo'\\''bar");
+        assert_eq!(escape_shell_arg("'"), "'\\''");
+        assert_eq!(escape_shell_arg("''"), "'\\'''\\''");
+
+        // String with other special chars (should be preserved as we wrap in '...')
+        assert_eq!(escape_shell_arg("$(rm -rf /)"), "$(rm -rf /)");
     }
 }
