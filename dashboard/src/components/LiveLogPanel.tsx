@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { Download, Maximize2, Minimize2, X } from 'lucide-react';
 import { getWebSocketUrl } from '../lib/api';
 import type { Job } from '../types';
 
@@ -9,6 +10,7 @@ interface LiveLogPanelProps {
 
 function LiveLogPanel({ job, onClose }: LiveLogPanelProps) {
   const [logs, setLogs] = useState<string[]>([]);
+  const [isFullscreen, setIsFullscreen] = useState(false);
   const logRef = useRef<HTMLDivElement>(null);
 
   // WebSocket for real-time log streaming
@@ -37,7 +39,11 @@ function LiveLogPanel({ job, onClose }: LiveLogPanelProps) {
   }, [logs]);
 
   return (
-    <div className="fixed top-0 right-0 bottom-0 w-[420px] bg-base-100 border-l border-base-200 shadow-2xl flex flex-col z-50">
+    <div
+      className={`fixed top-0 right-0 bottom-0 bg-base-100 border-l border-base-200 shadow-2xl flex flex-col z-50 transition-all duration-200 ease-in-out ${
+        isFullscreen ? 'w-full left-0 border-l-0' : 'w-[420px]'
+      }`}
+    >
       <div className="p-5 bg-base-200 border-b border-base-200">
         <div className="flex items-center gap-2 mb-1">
           <span
@@ -62,29 +68,47 @@ function LiveLogPanel({ job, onClose }: LiveLogPanelProps) {
         <div className="absolute top-4 right-4 flex gap-2">
           <button
             className="btn btn-ghost btn-xs btn-square text-base-content/60 hover:text-base-content"
-            title="Download"
+            title="Download Logs"
+            aria-label="Download logs"
+            onClick={() => {
+              const blob = new Blob([logs.join('\n')], { type: 'text/plain' });
+              const url = URL.createObjectURL(blob);
+              const a = document.createElement('a');
+              a.href = url;
+              a.download = `job-${job.id}-logs.txt`;
+              document.body.appendChild(a);
+              a.click();
+              document.body.removeChild(a);
+              URL.revokeObjectURL(url);
+            }}
           >
-            ↓
+            <Download size={14} />
           </button>
           <button
             className="btn btn-ghost btn-xs btn-square text-base-content/60 hover:text-base-content"
-            title="Fullscreen"
+            title={isFullscreen ? 'Exit Fullscreen' : 'Fullscreen'}
+            aria-label={isFullscreen ? 'Exit fullscreen' : 'Enter fullscreen'}
+            onClick={() => setIsFullscreen(!isFullscreen)}
           >
-            ⛶
+            {isFullscreen ? <Minimize2 size={14} /> : <Maximize2 size={14} />}
           </button>
           <button
             className="btn btn-ghost btn-xs btn-square text-error/60 hover:text-error hover:bg-error/10"
             onClick={onClose}
             title="Close"
+            aria-label="Close log panel"
           >
-            ●
+            <X size={14} />
           </button>
         </div>
       </div>
 
       <div
-        className="flex-1 p-4 overflow-y-auto font-mono text-xs leading-relaxed bg-[#050d18] text-gray-400"
+        className="flex-1 p-4 overflow-y-auto font-mono text-xs leading-relaxed bg-[#050d18] text-gray-400 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-primary focus:outline-none"
         ref={logRef}
+        tabIndex={0}
+        role="log"
+        aria-label="Build logs"
       >
         <div className="text-gray-500 text-xs mb-4">
           Build started at{' '}
