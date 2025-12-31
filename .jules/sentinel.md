@@ -1,4 +1,4 @@
-## 2024-05-22 - [Path Traversal in File Uploads]
-**Vulnerability:** The `upload_artifact` endpoint in `orchestrator` accepted a filename directly from the URL path without sufficient validation. The `upload_archive` endpoint also accepted an `upload_path` derived from `source_url` which could contain `..`.
-**Learning:** Even when using frameworks like Axum that decode URL parameters, we must validate that file paths do not contain directory traversal characters (`..`, `/`, `\`) before using them in storage operations.
-**Prevention:** I implemented strict validation for filenames (alphanumeric, ., -, _) matching the worker's logic, and directory traversal checks for storage paths. Always validate file path inputs before use.
+## 2024-05-23 - [Command Injection in Job Execution]
+**Vulnerability:** The `fetch_source` function in `worker/src/executor.rs` interpolated `source_url` directly into a shell command string, allowing command injection via single quotes. Additionally, `execute_in_vm` used a fixed heredoc delimiter `SCRIPT_EOF`, allowing a malicious script to break out of the heredoc and execute commands.
+**Learning:** Interpolating variables directly into shell commands is dangerous even with quotes if the variable itself can contain quotes. Always use robust escaping or avoid shell interpolation if possible. Heredoc delimiters must be unique or random to prevent collision with content.
+**Prevention:** I implemented `escape_shell_arg` to safely escape single quotes, added `--` to prevent argument injection, and switched to using random UUIDs for heredoc delimiters.
