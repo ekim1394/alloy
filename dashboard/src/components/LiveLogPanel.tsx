@@ -10,10 +10,13 @@ interface LiveLogPanelProps {
 function LiveLogPanel({ job, onClose }: LiveLogPanelProps) {
   const [logs, setLogs] = useState<string[]>([]);
   const logRef = useRef<HTMLDivElement>(null);
+  const bufferRef = useRef<string[]>([]);
+  const frameRef = useRef<number | null>(null);
 
   // WebSocket for real-time log streaming
   useEffect(() => {
     setLogs([]); // Clear logs when job changes
+    bufferRef.current = [];
 
     if (job.status === 'running') {
       const ws = new WebSocket(getWebSocketUrl(job.id));
@@ -21,11 +24,34 @@ function LiveLogPanel({ job, onClose }: LiveLogPanelProps) {
       ws.onmessage = (event) => {
         const data = JSON.parse(event.data);
         if (data.content) {
-          setLogs((prev) => [...prev, data.content]);
+          bufferRef.current.push(data.content);
         }
       };
 
-      return () => ws.close();
+      const flush = () => {
+        if (bufferRef.current.length > 0) {
+          const incoming = bufferRef.current;
+          bufferRef.current = [];
+          setLogs((prev) => {
+            const newLogs = [...prev, ...incoming];
+            // Performance: Limit to 10k lines to avoid crashing browser
+            if (newLogs.length > 10000) {
+              return newLogs.slice(-10000);
+            }
+            return newLogs;
+          });
+        }
+        frameRef.current = requestAnimationFrame(flush);
+      };
+
+      frameRef.current = requestAnimationFrame(flush);
+
+      return () => {
+        ws.close();
+        if (frameRef.current !== null) {
+          cancelAnimationFrame(frameRef.current);
+        }
+      };
     }
   }, [job.id, job.status]);
 
